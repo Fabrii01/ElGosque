@@ -289,20 +289,31 @@ Espero su confirmación y medios de pago.`;
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {catalogoDinamico.map((producto) => (
               <div key={producto.id} className="bg-[#F8F9FA] rounded-[2rem] p-8 hover:bg-white hover:shadow-2xl hover:shadow-green-900/5 transition-all duration-300 group border border-transparent hover:border-gray-100 flex flex-col h-full relative">
-                <div className="absolute top-6 right-6 bg-amber-100 text-amber-800 font-black px-4 py-1 rounded-full text-sm">
+                <div className="absolute top-6 right-6 bg-amber-100 text-amber-800 font-black px-4 py-1 rounded-full text-sm z-10">
                   S/ {producto.precioReferencial}
                 </div>
+                
+                {/* Contenedor de la Imagen del Producto */}
+                <div className="w-full h-48 mb-6 rounded-2xl overflow-hidden bg-gray-100 flex items-center justify-center shrink-0">
+                  {producto.imagenUrl ? (
+                    <img src={producto.imagenUrl} alt={producto.nombre} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  ) : (
+                    <div className="flex flex-col items-center text-gray-400">
+                      <svg className="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                      <span className="text-xs font-medium uppercase tracking-widest">Sin Imagen</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex-1">
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-gosque-green mb-6 group-hover:scale-110 transition-transform">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-1">{producto.nombre}</h3>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{producto.nombre}</h3>
                   <div className="flex flex-wrap gap-2 mb-4">
                     <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-md font-semibold">{producto.tipo}</span>
                     <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-md font-semibold">{producto.presentacion}</span>
                   </div>
                   <p className="text-gray-500 mb-8 leading-relaxed text-sm">{producto.descripcion}</p>
                 </div>
+                
                 <button 
                   onClick={() => abrirConfigurador(producto)} 
                   className="w-full bg-white border border-gray-200 text-gray-900 hover:bg-gosque-green hover:text-white hover:border-gosque-green font-bold py-4 rounded-2xl transition-colors duration-300 mt-auto"

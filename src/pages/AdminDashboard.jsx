@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { auth, db } from '../firebase';
+import { auth, db } from '../firebase'; // Quitamos 'storage' de aquí
 import { doc, getDoc, setDoc, collection, addDoc, getDocs, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 
 const AdminDashboard = () => {
@@ -10,40 +10,40 @@ const AdminDashboard = () => {
   const [pestanaActiva, setPestanaActiva] = useState('pedidos');
   
   // ==========================================
-  // ESTADOS: CONTENIDO INSTITUCIONAL (REQ-F01)
+  // ESTADOS: CONTENIDO INSTITUCIONAL
   // ==========================================
   const [contenidoInfo, setContenidoInfo] = useState({ titulo: '', descripcion: '' });
   const [guardandoMsg, setGuardandoMsg] = useState('');
 
   // ==========================================
-  // ESTADOS: TRAZABILIDAD (REQ-F04)
+  // ESTADOS: TRAZABILIDAD
   // ==========================================
   const etapasBase = ["Semilla", "Cultivo", "Cosecha", "Despulpado", "Fermentación", "Lavado", "Secado", "Tostado", "Empaquetado"];
   const [regionProcedencia, setRegionProcedencia] = useState('Rodríguez de Mendoza, Amazonas');
   const [etapasTrazabilidad, setEtapasTrazabilidad] = useState(etapasBase.map(e => ({ nombre: e, descripcion: '', img: '' })));
 
   // ==========================================
-  // ESTADOS: CATÁLOGO DE PRODUCTOS (REQ-F03)
+  // ESTADOS: CATÁLOGO DE PRODUCTOS
   // ==========================================
   const [productos, setProductos] = useState([]);
   const estadoInicialProducto = { nombre: 'Gourmet', descripcion: '', tipo: 'Tostado', presentacion: 'En grano', peso: '1 kg', precioReferencial: '' };
   const [nuevoProducto, setNuevoProducto] = useState(estadoInicialProducto);
   const [idEdicion, setIdEdicion] = useState(null); 
+  const [imagenArchivo, setImagenArchivo] = useState(null);
+  const [subiendoImg, setSubiendoImg] = useState(false);
 
   // ==========================================
-  // ESTADOS: PEDIDOS Y PAGOS (REQ-F08 y REQ-F09)
+  // ESTADOS: PEDIDOS Y PAGOS
   // ==========================================
   const [pedidos, setPedidos] = useState([]);
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null);
   const [modalPedidoVisible, setModalPedidoVisible] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState('Todos');
 
-  // Formulario Pedido
   const [precioAcordado, setPrecioAcordado] = useState('');
   const [nuevoEstado, setNuevoEstado] = useState('');
   const [motivoCancelacion, setMotivoCancelacion] = useState('');
 
-  // Formulario Pagos (REQ-F09)
   const [metodoPago, setMetodoPago] = useState('');
   const [montoPagado, setMontoPagado] = useState('');
   const [fechaPago, setFechaPago] = useState('');
@@ -51,7 +51,7 @@ const AdminDashboard = () => {
   const [referenciaConstancia, setReferenciaConstancia] = useState('');
 
   // ==========================================
-  // PROTECCIÓN DE RUTA Y CARGA INICIAL
+  // CARGA INICIAL
   // ==========================================
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -60,7 +60,6 @@ const AdminDashboard = () => {
         if (userDoc.exists() && userDoc.data().rol === "admin") {
           setAdminUser({ uid: user.uid, nombre: userDoc.data().nombre });
           setVerificando(false);
-          // Cargamos todos los módulos
           cargarContenidoWeb();
           cargarTrazabilidad();
           cargarProductos();
@@ -113,27 +112,71 @@ const AdminDashboard = () => {
   };
 
   // ==========================================
-  // FUNCIONES: CATÁLOGO
+  // FUNCIONES: CATÁLOGO CON BASE64
   // ==========================================
   const cargarProductos = async () => {
     const querySnapshot = await getDocs(collection(db, "productos"));
     setProductos(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   };
 
+  // Función mágica para convertir la imagen a texto
+  const convertirABase64 = (archivo) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(archivo);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const guardarProducto = async (e) => {
     e.preventDefault();
-    if (idEdicion) {
-      await updateDoc(doc(db, "productos", idEdicion), nuevoProducto);
-      setIdEdicion(null);
-    } else {
-      await addDoc(collection(db, "productos"), { ...nuevoProducto, activo: true });
+    setSubiendoImg(true);
+
+    try {
+      let urlImagen = nuevoProducto.imagenUrl || "";
+
+      if (imagenArchivo) {
+        // Validamos que la imagen no pese más de 800KB para que Firestore no la rechace
+        if (imagenArchivo.size > 800000) {
+          alert("La imagen es muy pesada. Por favor, elige una imagen que pese menos de 800 KB.");
+          setSubiendoImg(false);
+          return;
+        }
+        urlImagen = await convertirABase64(imagenArchivo);
+      }
+
+      const datosFinales = {
+        ...nuevoProducto,
+        imagenUrl: urlImagen
+      };
+
+      if (idEdicion) {
+        await updateDoc(doc(db, "productos", idEdicion), datosFinales);
+        setIdEdicion(null);
+      } else {
+        await addDoc(collection(db, "productos"), { ...datosFinales, activo: true });
+      }
+
+      setNuevoProducto(estadoInicialProducto);
+      setImagenArchivo(null);
+      cargarProductos();
+    } catch (error) {
+      console.error("Error al guardar producto:", error);
+      alert("Hubo un problema al guardar el producto.");
+    } finally {
+      setSubiendoImg(false);
     }
-    setNuevoProducto(estadoInicialProducto);
-    cargarProductos();
   };
 
   const editarProducto = (producto) => { setIdEdicion(producto.id); setNuevoProducto(producto); };
-  const cancelarEdicion = () => { setIdEdicion(null); setNuevoProducto(estadoInicialProducto); };
+  
+  const cancelarEdicion = () => { 
+    setIdEdicion(null); 
+    setNuevoProducto(estadoInicialProducto); 
+    setImagenArchivo(null);
+  };
+  
   const toggleActivo = async (id, estadoActual) => {
     await updateDoc(doc(db, "productos", id), { activo: !estadoActual });
     cargarProductos();
@@ -154,7 +197,6 @@ const AdminDashboard = () => {
     setNuevoEstado(pedido.estado || 'Pendiente');
     setMotivoCancelacion('');
 
-    // Cargar datos de pago existentes (REQ-F09)
     const pago = pedido.datosPago || {};
     setMetodoPago(pago.metodo || '');
     setMontoPagado(pago.monto || '');
@@ -169,13 +211,11 @@ const AdminDashboard = () => {
     e.preventDefault();
     if (!pedidoSeleccionado) return;
 
-    // Validación REQ-F08-07
     if ((nuevoEstado === 'Denegado' || nuevoEstado === 'Cancelado') && !motivoCancelacion.trim()) {
       alert("Debes ingresar un motivo para denegar o cancelar el pedido.");
       return;
     }
 
-    // Validación REQ-F09-04: Si se marca como pagado, debe haber un número de operación
     if (nuevoEstado === 'Pagado' && !nroOperacion.trim()) {
       alert("Para validar el pago, debes registrar el Número de Operación.");
       return;
@@ -193,13 +233,12 @@ const AdminDashboard = () => {
 
     const historialAcumulado = pedidoSeleccionado.historial ? [...pedidoSeleccionado.historial, nuevoHistorial] : [nuevoHistorial];
 
-    // Estructurar objeto de pago (REQ-F09)
     const datosPagoActualizados = {
       metodo: metodoPago,
       monto: montoPagado,
       fecha: fechaPago,
       nroOperacion: nroOperacion,
-      constancia: referenciaConstancia // Archivo referenciado o enlace
+      constancia: referenciaConstancia 
     };
 
     await updateDoc(docRef, {
@@ -226,7 +265,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 flex">
-      {/* BARRA LATERAL UNIFICADA */}
       <aside className="w-64 bg-gosque-green text-white hidden md:flex flex-col shadow-xl">
         <div className="p-6 text-center border-b border-green-800">
           <h2 className="text-2xl font-black tracking-wider text-amber-400">EL GOSQUE.</h2>
@@ -241,7 +279,6 @@ const AdminDashboard = () => {
         <div className="p-4 border-t border-green-800"><Link to="/" className="block text-center py-2 text-sm hover:text-amber-300 font-bold">← Salir a la Web</Link></div>
       </aside>
 
-      {/* ÁREA PRINCIPAL */}
       <main className="flex-1 p-8 overflow-y-auto">
         <header className="mb-8"><h1 className="text-3xl font-black text-gray-900 tracking-tight">Panel de Control</h1></header>
 
@@ -300,6 +337,7 @@ const AdminDashboard = () => {
           <div className="space-y-8 max-w-5xl">
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
               <h3 className="font-bold text-2xl text-gray-900 mb-6">{idEdicion ? 'Editar Producto' : 'Registrar Nuevo Producto'}</h3>
+              
               <form onSubmit={guardarProducto} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Variedad</label>
@@ -327,9 +365,29 @@ const AdminDashboard = () => {
                   <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Descripción</label>
                   <input type="text" required className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl outline-none" value={nuevoProducto.descripcion} onChange={e => setNuevoProducto({...nuevoProducto, descripcion: e.target.value})}/>
                 </div>
+
+                <div className="md:col-span-2 bg-white border border-gray-200 p-4 rounded-xl mt-2">
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Imagen del Producto (Max 800 KB)</label>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => setImagenArchivo(e.target.files[0])}
+                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-green-50 file:text-gosque-green hover:file:bg-green-100 transition"
+                  />
+                  {nuevoProducto.imagenUrl && !imagenArchivo && (
+                    <p className="text-xs text-amber-600 mt-2 font-bold">Este producto ya tiene una imagen. Sube una nueva solo si deseas reemplazarla.</p>
+                  )}
+                </div>
+
                 <div className="md:col-span-2 mt-4 flex gap-4">
-                  <button type="submit" className="bg-gosque-green text-white font-bold py-3 px-8 rounded-xl">{idEdicion ? 'Actualizar Producto' : 'Registrar Producto'}</button>
-                  {idEdicion && <button type="button" onClick={cancelarEdicion} className="bg-gray-200 font-bold py-3 px-8 rounded-xl">Cancelar</button>}
+                  <button type="submit" disabled={subiendoImg} className="bg-gosque-green text-white font-bold py-3 px-8 rounded-xl disabled:bg-gray-400">
+                    {subiendoImg ? 'Procesando imagen...' : (idEdicion ? 'Actualizar Producto' : 'Registrar Producto')}
+                  </button>
+                  {idEdicion && (
+                    <button type="button" onClick={cancelarEdicion} className="bg-gray-200 font-bold py-3 px-8 rounded-xl">
+                      Cancelar
+                    </button>
+                  )}
                 </div>
               </form>
             </div>
@@ -342,7 +400,14 @@ const AdminDashboard = () => {
                 <tbody className="divide-y divide-gray-100">
                   {productos.map(prod => (
                     <tr key={prod.id} className="hover:bg-gray-50">
-                      <td className="p-4 font-bold">{prod.nombre}</td>
+                      <td className="p-4 font-bold flex items-center gap-3">
+                        {prod.imagenUrl ? (
+                          <img src={prod.imagenUrl} alt={prod.nombre} className="w-10 h-10 object-cover rounded-full shadow-sm" />
+                        ) : (
+                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-xs text-gray-500 shadow-sm">N/A</div>
+                        )}
+                        {prod.nombre}
+                      </td>
                       <td className="p-4 text-sm text-gray-600">{prod.tipo} - {prod.presentacion}</td>
                       <td className="p-4 font-bold text-gosque-brown">S/ {prod.precioReferencial}</td>
                       <td className="p-4 text-center flex justify-center gap-2">
@@ -422,8 +487,6 @@ const AdminDashboard = () => {
               </div>
 
               <form id="form-actualizar-pedido" onSubmit={actualizarPedido} className="space-y-6">
-                
-                {/* REQ-F09: REGISTRO DE PAGOS Y CONSTANCIAS */}
                 <div className="border border-blue-100 bg-blue-50/30 p-5 rounded-xl">
                   <h4 className="text-sm font-black text-blue-900 uppercase mb-4 flex items-center gap-2">💰 Registro de Pago y Validación</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -453,7 +516,6 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                {/* REQ-F08: ACTUALIZACIÓN DE ESTADO COMERCIAL */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
                     <label className="block text-xs font-bold text-amber-900 uppercase mb-2">Total Acordado (S/)</label>
@@ -476,7 +538,6 @@ const AdminDashboard = () => {
                 )}
               </form>
 
-              {/* REQ-F08-06: Historial de Cambios */}
               {pedidoSeleccionado.historial && pedidoSeleccionado.historial.length > 0 && (
                 <div>
                   <h4 className="text-sm font-bold text-gray-900 uppercase mb-2">Historial de Operaciones</h4>
