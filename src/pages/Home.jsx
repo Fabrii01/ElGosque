@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { doc, getDoc, collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import AsistenteIA from '../pages/AsistenteIA';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -470,7 +471,9 @@ Espero su confirmación y medios de pago.`;
           </div>
         </div>
       )}
+      <AsistenteIA userData={userData} />
     </div>
+    
   );
 };
 

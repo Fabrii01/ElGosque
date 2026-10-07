@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase'; 
 import { doc, getDoc, setDoc, collection, addDoc, getDocs, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
@@ -7,11 +7,10 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [verificando, setVerificando] = useState(true);
   const [adminUser, setAdminUser] = useState(null);
-  const [pestanaActiva, setPestanaActiva] = useState('pedidos');
+  const [pestanaActiva, setPestanaActiva] = useState('dashboard');
   
   // ESTADOS: CONTENIDO INSTITUCIONAL
   const [contenidoInfo, setContenidoInfo] = useState({ titulo: '', descripcion: '' });
-  const [guardandoMsg, setGuardandoMsg] = useState('');
 
   // ESTADOS: TRAZABILIDAD
   const etapasBase = ["Semilla", "Cultivo", "Cosecha", "Despulpado", "Fermentación", "Lavado", "Secado", "Tostado", "Empaquetado"];
@@ -33,8 +32,6 @@ const AdminDashboard = () => {
   
   const [filtroEstado, setFiltroEstado] = useState('Todos'); 
   const [busquedaPedido, setBusquedaPedido] = useState(''); 
-  
-  // Paginación
   const [pedidosVisibles, setPedidosVisibles] = useState(10);
 
   const [precioAcordado, setPrecioAcordado] = useState(''); 
@@ -47,11 +44,13 @@ const AdminDashboard = () => {
   const [nroOperacion, setNroOperacion] = useState('');
   const [referenciaConstancia, setReferenciaConstancia] = useState('');
 
-  // Estados para Despacho / Envíos (REQ-F10)
   const [modalidadEnvio, setModalidadEnvio] = useState('');
   const [agenciaEnvio, setAgenciaEnvio] = useState('');
   const [nroGuia, setNroGuia] = useState('');
   const [fechaDespacho, setFechaDespacho] = useState('');
+
+  // ESTADO: BUSINESS INTELLIGENCE (REQ-F11)
+  const [periodoBI, setPeriodoBI] = useState('Todos');
 
   // CARGA INICIAL
   useEffect(() => {
@@ -71,21 +70,17 @@ const AdminDashboard = () => {
     return () => unsubscribe();
   }, [navigate]);
 
-  // FUNCIONES: CONTENIDO INSTITUCIONAL
+  // FUNCIONES DE CARGA BÁSICA
   const cargarContenidoWeb = async () => {
     const docSnap = await getDoc(doc(db, "ajustes", "institucional"));
     if (docSnap.exists()) setContenidoInfo(docSnap.data());
   };
-
   const guardarContenidoWeb = async (e) => {
     e.preventDefault();
-    setGuardandoMsg('Guardando contenido...');
     await setDoc(doc(db, "ajustes", "institucional"), contenidoInfo);
-    setGuardandoMsg('¡Contenido actualizado!');
-    setTimeout(() => setGuardandoMsg(''), 3000);
+    alert("Contenido actualizado exitosamente");
   };
-
-  // FUNCIONES: TRAZABILIDAD
+  
   const cargarTrazabilidad = async () => {
     const docTraza = await getDoc(doc(db, "ajustes", "trazabilidad"));
     if (docTraza.exists()) {
@@ -93,27 +88,21 @@ const AdminDashboard = () => {
       if (docTraza.data().etapas) setEtapasTrazabilidad(docTraza.data().etapas);
     }
   };
-
   const guardarTrazabilidad = async (e) => {
     e.preventDefault();
-    setGuardandoMsg('Guardando trazabilidad...');
     await setDoc(doc(db, "ajustes", "trazabilidad"), { region: regionProcedencia, etapas: etapasTrazabilidad });
-    setGuardandoMsg('¡Trazabilidad actualizada!');
-    setTimeout(() => setGuardandoMsg(''), 3000);
+    alert("Trazabilidad actualizada exitosamente");
   };
-
   const handleEtapaChange = (index, campo, valor) => {
     const nuevasEtapas = [...etapasTrazabilidad];
     nuevasEtapas[index][campo] = valor;
     setEtapasTrazabilidad(nuevasEtapas);
   };
-
-  // FUNCIONES: CATÁLOGO CON BASE64
+  
   const cargarProductos = async () => {
     const querySnapshot = await getDocs(collection(db, "productos"));
     setProductos(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   };
-
   const convertirABase64 = (archivo) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -122,64 +111,103 @@ const AdminDashboard = () => {
       reader.onerror = (error) => reject(error);
     });
   };
-
   const guardarProducto = async (e) => {
     e.preventDefault();
     setSubiendoImg(true);
-
     try {
       let urlImagen = nuevoProducto.imagenUrl || "";
-
       if (imagenArchivo) {
-        if (imagenArchivo.size > 800000) {
-          alert("La imagen es muy pesada. Por favor, elige una imagen que pese menos de 800 KB.");
-          setSubiendoImg(false);
-          return;
-        }
+        if (imagenArchivo.size > 800000) { alert("La imagen debe pesar menos de 800 KB."); setSubiendoImg(false); return; }
         urlImagen = await convertirABase64(imagenArchivo);
       }
-
-      const datosFinales = {
-        ...nuevoProducto,
-        imagenUrl: urlImagen
-      };
-
-      if (idEdicion) {
-        await updateDoc(doc(db, "productos", idEdicion), datosFinales);
-        setIdEdicion(null);
-      } else {
-        await addDoc(collection(db, "productos"), { ...datosFinales, activo: true });
-      }
-
-      setNuevoProducto(estadoInicialProducto);
-      setImagenArchivo(null);
-      cargarProductos();
-    } catch (error) {
-      console.error("Error al guardar producto:", error);
-      alert("Hubo un problema al guardar el producto.");
-    } finally {
-      setSubiendoImg(false);
-    }
+      const datosFinales = { ...nuevoProducto, imagenUrl: urlImagen };
+      if (idEdicion) { await updateDoc(doc(db, "productos", idEdicion), datosFinales); setIdEdicion(null); } 
+      else { await addDoc(collection(db, "productos"), { ...datosFinales, activo: true }); }
+      setNuevoProducto(estadoInicialProducto); setImagenArchivo(null); cargarProductos();
+    } catch (error) { console.error(error); alert("Error al guardar producto"); } 
+    finally { setSubiendoImg(false); }
   };
-
   const editarProducto = (producto) => { setIdEdicion(producto.id); setNuevoProducto(producto); };
-  
-  const cancelarEdicion = () => { 
-    setIdEdicion(null); 
-    setNuevoProducto(estadoInicialProducto); 
-    setImagenArchivo(null);
-  };
-  
-  const toggleActivo = async (id, estadoActual) => {
-    await updateDoc(doc(db, "productos", id), { activo: !estadoActual });
-    cargarProductos();
-  };
+  const cancelarEdicion = () => { setIdEdicion(null); setNuevoProducto(estadoInicialProducto); setImagenArchivo(null); };
+  const toggleActivo = async (id, estadoActual) => { await updateDoc(doc(db, "productos", id), { activo: !estadoActual }); cargarProductos(); };
 
-  // FUNCIONES: GESTIÓN DE PEDIDOS
   const cargarPedidos = async () => {
     const q = query(collection(db, "pedidos"), orderBy("fecha", "desc"));
     const querySnapshot = await getDocs(q);
     setPedidos(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
+
+  // MOTOR DE BUSINESS INTELLIGENCE
+  const estadisticasBI = useMemo(() => {
+    const ventasConcretadas = pedidos.filter(p => ['Vendido', 'Pagado', 'Enviado', 'Entregado'].includes(p.estado));
+    const pedidosFiltrados = ventasConcretadas.filter(p => {
+      if (periodoBI === 'Todos') return true;
+      if (!p.fecha) return false;
+      const mesPedido = new Date(p.fecha.seconds ? p.fecha.seconds * 1000 : p.fecha).getMonth() + 1;
+      return mesPedido.toString() === periodoBI;
+    });
+
+    if (pedidosFiltrados.length === 0) return null; 
+
+    const stats = {
+      ingresosTotales: 0,
+      totalTransacciones: pedidosFiltrados.length,
+      unidadesVendidas: 0,
+      ventasPorMes: {},      
+      rankingClientes: {},   
+      comparativaMolido: { 'En grano': 0, 'Molido': 0, 'Verde': 0 }, 
+      variedades: {},        
+      ciudades: {},          
+      modalidades: {}        
+    };
+
+    pedidosFiltrados.forEach(pedido => {
+      stats.ingresosTotales += (pedido.total || 0);
+      
+      const ciudad = pedido.ciudad || 'No especificada';
+      stats.ciudades[ciudad] = (stats.ciudades[ciudad] || 0) + 1;
+      
+      const modalidad = pedido.datosEnvio?.modalidad || 'Pendiente';
+      stats.modalidades[modalidad] = (stats.modalidades[modalidad] || 0) + 1;
+
+      if (pedido.fecha) {
+        const fechaObj = new Date(pedido.fecha.seconds ? pedido.fecha.seconds * 1000 : pedido.fecha);
+        const mesStr = fechaObj.toLocaleString('es-PE', { month: 'long', year: 'numeric' });
+        stats.ventasPorMes[mesStr] = (stats.ventasPorMes[mesStr] || 0) + (pedido.total || 0);
+      }
+
+      const nombreCli = pedido.clienteNombre || 'Desconocido';
+      if (!stats.rankingClientes[nombreCli]) { stats.rankingClientes[nombreCli] = { totalComprado: 0, volumenItems: 0, negocio: pedido.negocio }; }
+      stats.rankingClientes[nombreCli].totalComprado += (pedido.total || 0);
+
+      if (pedido.productos && Array.isArray(pedido.productos)) {
+        pedido.productos.forEach(prod => {
+          stats.unidadesVendidas += prod.cantidad;
+          stats.variedades[prod.nombre] = (stats.variedades[prod.nombre] || 0) + prod.cantidad;
+          if (stats.comparativaMolido[prod.presentacion] !== undefined) {
+             stats.comparativaMolido[prod.presentacion] += prod.cantidad;
+          }
+          stats.rankingClientes[nombreCli].volumenItems += prod.cantidad;
+        });
+      }
+    });
+
+    stats.ticketPromedio = stats.ingresosTotales / stats.totalTransacciones;
+
+    stats.topClientesArray = Object.entries(stats.rankingClientes).map(([nombre, data]) => ({ nombre, ...data })).sort((a, b) => b.totalComprado - a.totalComprado).slice(0, 5);
+    stats.topVariedadesArray = Object.entries(stats.variedades).map(([nombre, cantidad]) => ({ nombre, cantidad })).sort((a, b) => b.cantidad - a.cantidad);
+    stats.mesesArray = Object.entries(stats.ventasPorMes).map(([mes, total]) => ({ mes, total })).sort((a, b) => b.total - a.total); // Ordenado de mayor a menor venta
+
+    return stats;
+  }, [pedidos, periodoBI]);
+
+  const calcularPorcentaje = (valor, maximo) => maximo === 0 ? 0 : Math.round((valor / maximo) * 100);
+
+  // FUNCIONES DEL MODAL DE PEDIDOS
+  const formatearFecha = (timestamp) => {
+    if (!timestamp) return 'Pendiente';
+    let date = timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
+    return date.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric', hour:'2-digit', minute:'2-digit' });
   };
 
   const abrirModalPedido = (pedido) => {
@@ -187,109 +215,31 @@ const AdminDashboard = () => {
     setPrecioAcordado(pedido.total || ''); 
     setNuevoEstado(pedido.estado || 'Pendiente'); 
     setMotivoCancelacion('');
-
     const pago = pedido.datosPago || {};
-    setMetodoPago(pago.metodo || '');
-    setMontoPagado(pago.monto || '');
-    setFechaPago(pago.fecha || '');
-    setNroOperacion(pago.nroOperacion || '');
-    setReferenciaConstancia(pago.constancia || '');
-
+    setMetodoPago(pago.metodo || ''); setMontoPagado(pago.monto || ''); setFechaPago(pago.fecha || ''); setNroOperacion(pago.nroOperacion || ''); setReferenciaConstancia(pago.constancia || '');
     const envio = pedido.datosEnvio || {};
-    setModalidadEnvio(envio.modalidad || '');
-    setAgenciaEnvio(envio.agencia || '');
-    setNroGuia(envio.numeroGuia || '');
-    setFechaDespacho(envio.fechaEnvio || '');
-
+    setModalidadEnvio(envio.modalidad || ''); setAgenciaEnvio(envio.agencia || ''); setNroGuia(envio.numeroGuia || ''); setFechaDespacho(envio.fechaEnvio || '');
     setModalPedidoVisible(true);
   };
 
   const actualizarPedido = async (e) => {
     e.preventDefault();
-    if (!pedidoSeleccionado) return;
-
-    if ((nuevoEstado === 'Denegado' || nuevoEstado === 'Cancelado') && !motivoCancelacion.trim()) {
-      alert("Debes ingresar un motivo para denegar o cancelar el pedido.");
-      return;
-    }
-
-    if (nuevoEstado === 'Pagado' && !nroOperacion.trim()) {
-      alert("Para validar el pago, debes registrar el Número de Operación.");
-      return;
-    }
-
-    // Validación REQ-F10-05
-    if (nuevoEstado === 'Entregado' && (!modalidadEnvio || !fechaDespacho)) {
-      alert("No puedes marcar el pedido como 'Entregado' si no has registrado primero los datos de envío (Modalidad y Fecha).");
-      return;
-    }
-
+    if ((nuevoEstado === 'Denegado' || nuevoEstado === 'Cancelado') && !motivoCancelacion.trim()) return alert("Debes ingresar un motivo.");
+    if (nuevoEstado === 'Pagado' && !nroOperacion.trim()) return alert("Falta Número de Operación.");
+    if (nuevoEstado === 'Entregado' && (!modalidadEnvio || !fechaDespacho)) return alert("Faltan datos de envío.");
     const docRef = doc(db, "pedidos", pedidoSeleccionado.id);
-    
-    const nuevoHistorial = {
-      estadoAnterior: pedidoSeleccionado.estado,
-      estadoNuevo: nuevoEstado,
-      fechaCambio: new Date().toISOString(),
-      responsable: adminUser.nombre,
-      motivo: motivoCancelacion || 'Actualización administrativa'
-    };
-
+    const nuevoHistorial = { estadoAnterior: pedidoSeleccionado.estado, estadoNuevo: nuevoEstado, fechaCambio: new Date().toISOString(), responsable: adminUser.nombre, motivo: motivoCancelacion || 'Gestión operativa' };
     const historialAcumulado = pedidoSeleccionado.historial ? [...pedidoSeleccionado.historial, nuevoHistorial] : [nuevoHistorial];
-
-    const datosPagoActualizados = {
-      metodo: metodoPago,
-      monto: montoPagado,
-      fecha: fechaPago,
-      nroOperacion: nroOperacion,
-      constancia: referenciaConstancia 
-    };
-
-    const datosEnvioActualizados = {
-      modalidad: modalidadEnvio,
-      agencia: agenciaEnvio,
-      numeroGuia: nroGuia,
-      fechaEnvio: fechaDespacho
-    };
-
-    await updateDoc(docRef, {
-      total: parseFloat(precioAcordado),
-      estado: nuevoEstado,
-      historial: historialAcumulado,
-      datosPago: datosPagoActualizados,
-      datosEnvio: datosEnvioActualizados, 
-      fechaActualizacion: serverTimestamp()
-    });
-
-    setModalPedidoVisible(false);
-    cargarPedidos();
+    await updateDoc(docRef, { total: parseFloat(precioAcordado), estado: nuevoEstado, historial: historialAcumulado, datosPago: { metodo: metodoPago, monto: montoPagado, fecha: fechaPago, nroOperacion: nroOperacion, constancia: referenciaConstancia }, datosEnvio: { modalidad: modalidadEnvio, agencia: agenciaEnvio, numeroGuia: nroGuia, fechaEnvio: fechaDespacho }, fechaActualizacion: serverTimestamp() });
+    setModalPedidoVisible(false); cargarPedidos();
   };
 
-  const formatearFecha = (timestamp) => {
-    if (!timestamp) return 'Fecha pendiente';
-    let date;
-    if (timestamp.seconds) {
-        date = new Date(timestamp.seconds * 1000);
-    } else if (typeof timestamp === 'string') {
-        date = new Date(timestamp);
-    } else {
-        return 'Fecha pendiente';
-    }
-    return date.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric', hour:'2-digit', minute:'2-digit' });
-  };
-
-  // Lógica combinada: Filtro de Estado + Buscador de texto
   const pedidosFiltrados = pedidos.filter(p => {
     const coincideEstado = filtroEstado === 'Todos' || p.estado === filtroEstado;
-    
     const termino = busquedaPedido.toLowerCase();
-    const coincideBusqueda = termino === '' || 
-      (p.codigo && p.codigo.toLowerCase().includes(termino)) || 
-      (p.clienteNombre && p.clienteNombre.toLowerCase().includes(termino)) || 
-      (p.negocio && p.negocio.toLowerCase().includes(termino));
-
+    const coincideBusqueda = termino === '' || (p.codigo && p.codigo.toLowerCase().includes(termino)) || (p.clienteNombre && p.clienteNombre.toLowerCase().includes(termino)) || (p.negocio && p.negocio.toLowerCase().includes(termino));
     return coincideEstado && coincideBusqueda;
   });
-  
   const solicitudesPorConfirmar = pedidosFiltrados.filter(p => p.estado === 'Pendiente');
   const pedidosConfirmados = pedidosFiltrados.filter(p => p.estado !== 'Pendiente');
 
@@ -297,12 +247,13 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 flex">
-      <aside className="w-64 bg-gosque-green text-white hidden md:flex flex-col shadow-xl">
+      <aside className="w-64 bg-gosque-green text-white hidden md:flex flex-col shadow-xl shrink-0">
         <div className="p-6 text-center border-b border-green-800">
           <h2 className="text-2xl font-black tracking-wider text-amber-400">EL GOSQUE.</h2>
           <p className="text-xs text-green-200 mt-1 font-bold uppercase tracking-widest">Admin Panel</p>
         </div>
         <nav className="flex-1 p-4 space-y-2">
+          <button onClick={() => setPestanaActiva('dashboard')} className={`w-full text-left block py-3 px-4 rounded-xl font-bold transition ${pestanaActiva === 'dashboard' ? 'bg-green-800 text-white' : 'text-green-100 hover:bg-green-700'}`}>📊 Dashboard BI</button>
           <button onClick={() => setPestanaActiva('pedidos')} className={`w-full text-left block py-3 px-4 rounded-xl font-bold transition ${pestanaActiva === 'pedidos' ? 'bg-green-800 text-white' : 'text-green-100 hover:bg-green-700'}`}>📦 Gestión de Pedidos</button>
           <button onClick={() => setPestanaActiva('catalogo')} className={`w-full text-left block py-3 px-4 rounded-xl font-bold transition ${pestanaActiva === 'catalogo' ? 'bg-green-800 text-white' : 'text-green-100 hover:bg-green-700'}`}>☕ Catálogo de Productos</button>
           <button onClick={() => setPestanaActiva('trazabilidad')} className={`w-full text-left block py-3 px-4 rounded-xl font-bold transition ${pestanaActiva === 'trazabilidad' ? 'bg-green-800 text-white' : 'text-green-100 hover:bg-green-700'}`}>🌱 Trazabilidad</button>
@@ -314,79 +265,229 @@ const AdminDashboard = () => {
       <main className="flex-1 p-8 overflow-y-auto">
         <header className="mb-8"><h1 className="text-3xl font-black text-gray-900 tracking-tight">Panel de Control</h1></header>
 
-        {/* 1. PESTAÑA: PEDIDOS */}
-        {pestanaActiva === 'pedidos' && (
-          <div className="space-y-8">
+        {/* PESTAÑA: DASHBOARD BI */}
+        {pestanaActiva === 'dashboard' && (
+          <div className="space-y-6 animate-fade-in max-w-7xl mx-auto">
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                <div>
-                  <h3 className="font-bold text-lg text-gray-900">Filtrar y Buscar</h3>
+                  <h3 className="font-bold text-2xl text-gray-900">Inteligencia Comercial</h3>
+                  <p className="text-sm text-gray-500">Métricas basadas en transacciones confirmadas (Vendido, Pagado, Enviado, Entregado).</p>
                </div>
-              <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                <input 
-                  type="text" 
-                  placeholder="Buscar por código, cliente o negocio..." 
-                  className="border border-gray-200 p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gosque-green w-full sm:w-64"
-                  value={busquedaPedido}
-                  onChange={e => setBusquedaPedido(e.target.value)}
-                />
-                <select 
-                  className="border border-gray-200 p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gosque-green w-full sm:w-auto" 
-                  value={filtroEstado} 
-                  onChange={e => setFiltroEstado(e.target.value)}
-                >
-                  <option>Todos</option><option>Pendiente</option><option>Vendido</option><option>Pagado</option>
-                  <option>Enviado</option><option>Entregado</option><option>Denegado</option><option>Cancelado</option>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Filtrar Mes:</span>
+                <select className="border border-gray-200 p-3 rounded-xl text-sm font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-gosque-green" value={periodoBI} onChange={e => setPeriodoBI(e.target.value)}>
+                  <option value="Todos">Histórico Global</option>
+                  <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+                  <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+                  <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+                  <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
                 </select>
               </div>
             </div>
+
+            {!estadisticasBI ? (
+              <div className="bg-amber-50 rounded-3xl p-12 text-center border border-amber-100">
+                <div className="text-5xl mb-4">📭</div>
+                <h3 className="text-xl font-bold text-amber-900 mb-2">No hay datos para el filtro seleccionado.</h3>
+                <p className="text-amber-700">El motor BI requiere pedidos procesados comercialmente para generar reportes.</p>
+              </div>
+            ) : (
+              <>
+                {/* TARJETAS MÉTRICAS PRINCIPALES */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-gosque-green rounded-3xl p-6 text-white shadow-lg flex flex-col justify-center">
+                    <p className="text-green-100 font-bold uppercase tracking-widest text-xs mb-1">Ingresos Acumulados</p>
+                    <h2 className="text-4xl font-black mb-1">S/ {estadisticasBI.ingresosTotales.toFixed(2)}</h2>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col justify-center">
+                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-1">Ticket Promedio</p>
+                    <h2 className="text-4xl font-black text-gosque-brown mb-1">S/ {estadisticasBI.ticketPromedio.toFixed(2)}</h2>
+                    <p className="text-xs text-gray-500">Por orden de compra.</p>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col justify-center">
+                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-1">Volumen Desplazado</p>
+                    <h2 className="text-4xl font-black text-gray-900 mb-1">{estadisticasBI.unidadesVendidas}</h2>
+                    <p className="text-xs text-gray-500">Unidades de café vendidas.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* COMPARATIVA MENSUAL EN BARRAS HORIZONTALES (SIEMPRE VISIBLE) */}
+                  <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+                    <h4 className="font-bold text-gray-900 mb-6 uppercase text-sm tracking-wider flex justify-between items-center">
+                      Ingresos por Mes <span className="text-xs font-normal text-gray-400 normal-case">Ordenado por volumen</span>
+                    </h4>
+                    <div className="space-y-4">
+                      {estadisticasBI.mesesArray.map((m, idx) => {
+                        const maxMes = estadisticasBI.mesesArray[0].total; // El mayor siempre es el 100%
+                        const widthPct = calcularPorcentaje(m.total, maxMes);
+                        return (
+                          <div key={idx} className="w-full">
+                            <div className="flex justify-between text-xs font-bold mb-1 text-gray-600">
+                              <span className="uppercase">{m.mes}</span>
+                              <span>S/ {m.total.toFixed(2)}</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-3">
+                              <div className="bg-gosque-green h-3 rounded-full transition-all duration-1000" style={{ width: `${Math.max(widthPct, 2)}%` }}></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* RANKING B2B */}
+                  <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+                    <h4 className="font-bold text-gray-900 mb-6 uppercase text-sm tracking-wider">Top Clientes B2B</h4>
+                    <div className="space-y-5">
+                      {estadisticasBI.topClientesArray.map((cliente, idx) => {
+                        const maxCompra = estadisticasBI.topClientesArray[0].totalComprado;
+                        const widthPct = calcularPorcentaje(cliente.totalComprado, maxCompra);
+                        return (
+                          <div key={idx}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="font-bold text-gray-800">{idx + 1}. {cliente.nombre} <span className="text-gray-400 font-normal">({cliente.negocio})</span></span>
+                              <span className="font-black text-gosque-brown">S/ {cliente.totalComprado.toFixed(2)}</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2">
+                              <div className="bg-amber-400 h-2 rounded-full transition-all duration-1000" style={{ width: `${Math.max(widthPct, 2)}%` }}></div>
+                            </div>
+                            <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold text-right">{cliente.volumenItems} unidades</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* COMPARATIVA GRANO VS MOLIDO */}
+                  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center">
+                    <h4 className="font-bold text-gray-900 mb-4 uppercase text-xs tracking-wider text-center">Grano vs Molido</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-amber-50 py-4 rounded-xl border border-amber-100 text-center">
+                        <p className="text-3xl font-black text-amber-900 mb-1">{estadisticasBI.comparativaMolido['En grano']}</p>
+                        <p className="text-[10px] font-bold text-amber-700 uppercase">En Grano</p>
+                      </div>
+                      <div className="bg-stone-50 py-4 rounded-xl border border-stone-200 text-center">
+                        <p className="text-3xl font-black text-stone-900 mb-1">{estadisticasBI.comparativaMolido['Molido']}</p>
+                        <p className="text-[10px] font-bold text-stone-700 uppercase">Molido</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* VARIEDADES TOP */}
+                  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 lg:col-span-2">
+                    <h4 className="font-bold text-gray-900 mb-4 uppercase text-sm tracking-wider">Distribución de Variedades</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {estadisticasBI.topVariedadesArray.map((v, i) => (
+                        <div key={i} className="bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl flex items-center justify-between gap-4 grow min-w-[150px]">
+                          <span className="text-sm font-bold text-gray-700">{v.nombre}</span>
+                          <span className="bg-gray-900 text-white text-xs font-black px-3 py-1 rounded-full">{v.cantidad}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* DISTRIBUCIÓN LOGÍSTICA */}
+                <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+                  <h4 className="font-bold text-gray-900 mb-6 uppercase text-sm tracking-wider">Logística y Entregas</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase mb-3 border-b pb-2">Por Ciudad Logística</p>
+                      <div className="space-y-2">
+                        {Object.entries(estadisticasBI.ciudades).sort((a,b)=>b[1]-a[1]).map(([ciudad, count]) => (
+                          <div key={ciudad} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg">
+                            <span className="text-sm font-medium text-gray-700">{ciudad}</span>
+                            <span className="text-sm font-black text-gray-900">{count} ped</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase mb-3 border-b pb-2">Por Modalidad de Envío</p>
+                      <div className="space-y-2">
+                        {Object.entries(estadisticasBI.modalidades).sort((a,b)=>b[1]-a[1]).map(([mod, count]) => (
+                          <div key={mod} className="flex justify-between items-center bg-purple-50 px-3 py-2 rounded-lg">
+                            <span className="text-sm font-medium text-purple-900">{mod}</span>
+                            <span className="text-sm font-black text-purple-700">{count} despachos</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* PESTAÑA: PEDIDOS */}
+        {pestanaActiva === 'pedidos' && (
+          <div className="space-y-8 max-w-7xl mx-auto">
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+               <div><h3 className="font-bold text-lg text-gray-900">Búsqueda Logística</h3></div>
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                <input type="text" placeholder="Buscar código, cliente o negocio..." className="border border-gray-200 p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gosque-green w-full sm:w-64" value={busquedaPedido} onChange={e => setBusquedaPedido(e.target.value)} />
+                <select className="border border-gray-200 p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gosque-green w-full sm:w-auto" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
+                  <option>Todos</option><option>Pendiente</option><option>Vendido</option><option>Pagado</option><option>Enviado</option><option>Entregado</option><option>Denegado</option><option>Cancelado</option>
+                </select>
+              </div>
+            </div>
+
             {/* TABLA 1: SOLICITUDES PENDIENTES */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6 border-b border-gray-100 bg-amber-50">
-                <h3 className="font-bold text-lg text-amber-900">Nuevas Solicitudes (Por Confirmar)</h3>
-                <p className="text-xs text-amber-700">Revisar, cotizar y convertir a pedido.</p>
+              <div className="p-6 border-b border-amber-100 bg-amber-50 flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold text-lg text-amber-900">Cotizaciones (Pendientes)</h3>
+                  <p className="text-xs text-amber-700">Requerimientos por analizar.</p>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                  <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-bold">
-                    <tr><th className="p-4">Código / Fecha</th><th className="p-4">Cliente</th><th className="p-4">Estado</th><th className="p-4 text-center">Acción</th></tr>
+                  <thead className="bg-white text-xs uppercase text-gray-400 font-bold border-b">
+                    <tr><th className="p-4">Registro</th><th className="p-4">Cliente / B2B</th><th className="p-4">Estado</th><th className="p-4 text-center">Acción</th></tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-50">
                     {solicitudesPorConfirmar.slice(0, pedidosVisibles).map(pedido => (
-                      <tr key={pedido.id} className="hover:bg-amber-50/50">
+                      <tr key={pedido.id} className="hover:bg-gray-50">
                         <td className="p-4"><span className="font-black text-gosque-green block">{pedido.codigo}</span><span className="text-xs text-gray-500">{formatearFecha(pedido.fecha)}</span></td>
-                        <td className="p-4"><span className="font-bold block">{pedido.clienteNombre}</span></td>
-                        <td className="p-4"><span className="px-3 py-1 rounded-full text-xs font-bold border bg-yellow-100 text-yellow-800">Solicitud</span></td>
-                        <td className="p-4 text-center"><button onClick={() => abrirModalPedido(pedido)} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Cotizar</button></td>
+                        <td className="p-4"><span className="font-bold text-gray-900 block">{pedido.clienteNombre}</span><span className="text-xs text-gray-500">{pedido.negocio}</span></td>
+                        <td className="p-4"><span className="px-3 py-1 rounded-full text-[10px] font-bold border border-yellow-200 bg-yellow-50 text-yellow-700 uppercase tracking-widest">Solicitud</span></td>
+                        <td className="p-4 text-center"><button onClick={() => abrirModalPedido(pedido)} className="bg-amber-400 hover:bg-amber-500 text-amber-950 px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">Atender</button></td>
                       </tr>
                     ))}
-                    {solicitudesPorConfirmar.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-gray-500">No se encontraron solicitudes.</td></tr>}
+                    {solicitudesPorConfirmar.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-gray-400 italic">No hay cotizaciones pendientes.</td></tr>}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* TABLA 2: PEDIDOS CONFIRMADOS */}
+            {/* TABLA 2: PEDIDOS EN FIRME */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6 border-b border-gray-100 bg-gosque-green">
-                <h3 className="font-bold text-lg text-white">Pedidos Confirmados</h3>
-                <p className="text-xs text-green-100">Gestión de pagos, envíos y entregas.</p>
+              <div className="p-6 border-b border-green-100 bg-gosque-green flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold text-lg text-white">Órdenes Activas</h3>
+                  <p className="text-xs text-green-100">Transacciones en curso logístico.</p>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                  <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-bold">
-                    <tr><th className="p-4">Código</th><th className="p-4">Cliente</th><th className="p-4">Total Acordado</th><th className="p-4">Estado Operativo</th><th className="p-4 text-center">Gestión</th></tr>
+                  <thead className="bg-white text-xs uppercase text-gray-400 font-bold border-b">
+                    <tr><th className="p-4">Tracking</th><th className="p-4">Cliente</th><th className="p-4">Acuerdo</th><th className="p-4">Situación</th><th className="p-4 text-center">Panel</th></tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-50">
                     {pedidosConfirmados.slice(0, pedidosVisibles).map(pedido => (
                       <tr key={pedido.id} className="hover:bg-gray-50">
-                        <td className="p-4 font-black text-gosque-green">{pedido.codigo}</td>
-                        <td className="p-4 font-bold">{pedido.clienteNombre}</td>
+                        <td className="p-4"><span className="font-black text-gray-900 block">{pedido.codigo}</span><span className="text-xs text-gray-500">{formatearFecha(pedido.fecha)}</span></td>
+                        <td className="p-4"><span className="font-bold text-gray-900 block">{pedido.clienteNombre}</span><span className="text-xs text-gray-500">{pedido.negocio}</span></td>
                         <td className="p-4 font-black text-gosque-brown">S/ {pedido.total?.toFixed(2)}</td>
-                        <td className="p-4"><span className="px-3 py-1 rounded-full text-xs font-bold border bg-blue-100 text-blue-800">{pedido.estado}</span></td>
-                        <td className="p-4 text-center"><button onClick={() => abrirModalPedido(pedido)} className="bg-gray-900 hover:bg-gray-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Administrar</button></td>
+                        <td className="p-4"><span className="px-3 py-1 rounded-full text-[10px] font-bold border border-blue-200 bg-blue-50 text-blue-700 uppercase tracking-widest">{pedido.estado}</span></td>
+                        <td className="p-4 text-center"><button onClick={() => abrirModalPedido(pedido)} className="border border-gray-300 hover:bg-gray-900 hover:text-white hover:border-gray-900 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold transition">Operar</button></td>
                       </tr>
                     ))}
-                     {pedidosConfirmados.length === 0 && <tr><td colSpan="5" className="p-8 text-center text-gray-500">No se encontraron pedidos.</td></tr>}
+                     {pedidosConfirmados.length === 0 && <tr><td colSpan="5" className="p-8 text-center text-gray-400 italic">No se encontraron órdenes.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -394,20 +495,17 @@ const AdminDashboard = () => {
             
             {pedidosFiltrados.length > pedidosVisibles && (
                 <div className="text-center mt-4">
-                  <button 
-                     onClick={() => setPedidosVisibles(prev => prev + 10)} 
-                     className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-full transition"
-                  >
-                    Cargar más pedidos
+                  <button onClick={() => setPedidosVisibles(prev => prev + 10)} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm font-bold py-3 px-8 rounded-xl transition">
+                    Cargar más registros históricos
                   </button>
                 </div>
             )}
           </div>
         )}
 
-        {/* 2. PESTAÑA: CATÁLOGO */}
+        {/* PESTAÑA: CATÁLOGO */}
         {pestanaActiva === 'catalogo' && (
-          <div className="space-y-8 max-w-5xl">
+          <div className="space-y-8 max-w-5xl mx-auto">
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
               <h3 className="font-bold text-2xl text-gray-900 mb-6">{idEdicion ? 'Editar Producto' : 'Registrar Nuevo Producto'}</h3>
               
@@ -478,9 +576,9 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* 3. PESTAÑA: TRAZABILIDAD */}
+        {/* PESTAÑA: TRAZABILIDAD */}
         {pestanaActiva === 'trazabilidad' && (
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 max-w-4xl">
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 max-w-4xl mx-auto">
             <h3 className="font-bold text-2xl text-gray-900 mb-6">Trazabilidad del Café</h3>
             <form onSubmit={guardarTrazabilidad} className="space-y-6">
               <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
@@ -501,9 +599,9 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* 4. PESTAÑA: CONTENIDO WEB */}
+        {/* PESTAÑA: CONTENIDO WEB */}
         {pestanaActiva === 'contenido' && (
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 max-w-3xl">
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
             <h3 className="font-bold text-2xl text-gray-900 mb-6">Información Institucional</h3>
             <form onSubmit={guardarContenidoWeb} className="space-y-6">
               <div>
@@ -525,7 +623,7 @@ const AdminDashboard = () => {
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="bg-gray-50 p-6 border-b flex justify-between items-center">
-              <div><span className="text-xs font-bold text-gray-400 uppercase block mb-1">Gestión de Pedido</span><h3 className="font-black text-2xl text-gosque-green">{pedidoSeleccionado.codigo}</h3></div>
+              <div><span className="text-xs font-bold text-gray-400 uppercase block mb-1">Operación Operativa</span><h3 className="font-black text-2xl text-gosque-green">{pedidoSeleccionado.codigo}</h3></div>
               <button onClick={() => setModalPedidoVisible(false)} className="text-gray-400 hover:text-red-500 font-black text-xl">X</button>
             </div>
             
@@ -541,9 +639,8 @@ const AdminDashboard = () => {
 
               <form id="form-actualizar-pedido" onSubmit={actualizarPedido} className="space-y-6">
                 
-                {/* REQ-F09: REGISTRO DE PAGOS */}
                 <div className="border border-blue-100 bg-blue-50/30 p-5 rounded-xl">
-                  <h4 className="text-sm font-black text-blue-900 uppercase mb-4 flex items-center gap-2">💰 Registro de Pago y Validación</h4>
+                  <h4 className="text-sm font-black text-blue-900 uppercase mb-4 flex items-center gap-2">💰 Conciliación de Pago</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Medio de Pago</label>
@@ -565,15 +662,14 @@ const AdminDashboard = () => {
                       <input type="text" className="w-full bg-white border border-gray-300 p-2 rounded-lg outline-none" value={nroOperacion} onChange={e => setNroOperacion(e.target.value)} placeholder="Ej. 984523" />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Referencia / Constancia (URL o Nota)</label>
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Referencia / URL Constancia</label>
                       <input type="text" className="w-full bg-white border border-gray-300 p-2 rounded-lg outline-none" value={referenciaConstancia} onChange={e => setReferenciaConstancia(e.target.value)} placeholder="Enlace a captura o ubicación de la constancia" />
                     </div>
                   </div>
                 </div>
 
-                {/* REQ-F10: REGISTRO DE ENVÍOS Y ENTREGAS */}
                 <div className="border border-purple-100 bg-purple-50/30 p-5 rounded-xl">
-                  <h4 className="text-sm font-black text-purple-900 uppercase mb-4 flex items-center gap-2">📦 Datos de Despacho</h4>
+                  <h4 className="text-sm font-black text-purple-900 uppercase mb-4 flex items-center gap-2">📦 Logística y Despacho</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Modalidad de Entrega</label>
@@ -583,15 +679,15 @@ const AdminDashboard = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Agencia / Transportista</label>
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Agencia / Courier</label>
                       <input type="text" className="w-full bg-white border border-gray-300 p-2 rounded-lg outline-none" value={agenciaEnvio} onChange={e => setAgenciaEnvio(e.target.value)} placeholder="Ej. Shalom, Olva, Moto 1..." />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Envío</label>
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Despacho</label>
                       <input type="date" className="w-full bg-white border border-gray-300 p-2 rounded-lg outline-none" value={fechaDespacho} onChange={e => setFechaDespacho(e.target.value)} />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Número de Guía (Tracking)</label>
+                      <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Tracking / Número de Guía</label>
                       <input type="text" className="w-full bg-white border border-gray-300 p-2 rounded-lg outline-none" value={nroGuia} onChange={e => setNroGuia(e.target.value)} placeholder="Ej. TRU-009812" />
                     </div>
                   </div>
@@ -599,13 +695,13 @@ const AdminDashboard = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
-                    <label className="block text-xs font-bold text-amber-900 uppercase mb-2">Total Acordado (S/)</label>
-                    <input type="number" step="0.10" required className="w-full bg-white border border-amber-300 p-2 rounded-lg font-bold outline-none" value={precioAcordado} onChange={e => setPrecioAcordado(e.target.value)} />
+                    <label className="block text-xs font-bold text-amber-900 uppercase mb-2">Monto Fijo Acordado (S/)</label>
+                    <input type="number" step="0.10" required className="w-full bg-white border border-amber-300 p-2 rounded-lg font-bold outline-none text-xl text-gosque-brown" value={precioAcordado} onChange={e => setPrecioAcordado(e.target.value)} />
                   </div>
                   
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                    <label className="block text-xs font-bold text-gray-900 uppercase mb-2">Estado General</label>
-                    <select className="w-full bg-white border border-gray-300 p-2 rounded-lg font-bold outline-none" value={nuevoEstado} onChange={e => setNuevoEstado(e.target.value)}>
+                    <label className="block text-xs font-bold text-gray-900 uppercase mb-2">Actualizar Fase</label>
+                    <select className="w-full bg-white border border-gray-300 p-2 rounded-lg font-bold outline-none text-lg" value={nuevoEstado} onChange={e => setNuevoEstado(e.target.value)}>
                       <option>Pendiente</option><option>Vendido</option><option>Pagado</option><option>Enviado</option><option>Entregado</option><option>Denegado</option><option>Cancelado</option>
                     </select>
                   </div>
@@ -613,26 +709,25 @@ const AdminDashboard = () => {
 
                 {(nuevoEstado === 'Denegado' || nuevoEstado === 'Cancelado') && (
                   <div>
-                    <label className="block text-xs font-bold text-red-700 uppercase mb-2">Motivo (Obligatorio)</label>
+                    <label className="block text-xs font-bold text-red-700 uppercase mb-2">Sustento Operativo (Obligatorio)</label>
                     <input type="text" className="w-full border border-red-300 p-3 rounded-lg outline-none bg-red-50" value={motivoCancelacion} onChange={e => setMotivoCancelacion(e.target.value)} />
                   </div>
                 )}
               </form>
 
-              {/* Renderizado del Historial en el Modal */}
               {pedidoSeleccionado.historial && pedidoSeleccionado.historial.length > 0 && (
                 <div className="mt-8 border-t pt-6">
-                  <h4 className="text-sm font-black text-gray-900 uppercase mb-4">Auditoría de Estados (REQ-F08-05)</h4>
+                  <h4 className="text-sm font-black text-gray-900 uppercase mb-4">Registro Histórico (Auditoría)</h4>
                   <div className="space-y-4 border-l-2 border-gosque-green ml-3 pl-4">
                     {pedidoSeleccionado.historial.map((hist, idx) => (
                       <div key={idx} className="relative">
                         <div className="absolute -left-[21px] top-1 w-3 h-3 bg-gosque-green rounded-full border-2 border-white"></div>
                         <p className="text-xs text-gray-500 font-bold mb-1">
-                          {new Date(hist.fechaCambio).toLocaleString('es-PE')} — Modificado por: <span className="text-gray-900">{hist.responsable}</span>
+                          {new Date(hist.fechaCambio).toLocaleString('es-PE')} — Registrado por: <span className="text-gray-900">{hist.responsable}</span>
                         </p>
                         <p className="text-sm text-gray-800">
                           Cambio a <span className="font-black text-gosque-green">{hist.estadoNuevo}</span>. 
-                          <span className="text-gray-500 italic ml-2">Motivo: {hist.motivo}</span>
+                          <span className="text-gray-500 italic ml-2">Nota: {hist.motivo}</span>
                         </p>
                       </div>
                     ))}
@@ -642,8 +737,8 @@ const AdminDashboard = () => {
             </div>
 
             <div className="bg-gray-50 p-6 border-t border-gray-100 flex justify-end gap-4">
-              <button onClick={() => setModalPedidoVisible(false)} className="px-6 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-200">Cerrar</button>
-              <button type="submit" form="form-actualizar-pedido" className="px-6 py-3 rounded-xl font-bold bg-gosque-green text-white hover:bg-green-700 shadow-lg">Guardar y Validar</button>
+              <button onClick={() => setModalPedidoVisible(false)} className="px-6 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-200">Descartar</button>
+              <button type="submit" form="form-actualizar-pedido" className="px-6 py-3 rounded-xl font-bold bg-gosque-green text-white hover:bg-green-700 shadow-lg">Aplicar Cambios</button>
             </div>
           </div>
         </div>
