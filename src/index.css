@@ -1,3 +1,58 @@
 @tailwind base;
+
+/* Identidad de toda la aplicación: tipografía y color de texto del portal */
+@layer base {
+  body { @apply font-cuerpo text-cafe-espresso bg-cafe-crema; }
+}
+
 @tailwind components;
 @tailwind utilities;
+
+/* Desplazamiento horizontal sin barra visible (carruseles y pestañas en celular) */
+@layer utilities {
+  .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+}
+
+/* Portada de la cafetería: acercamiento lento de la foto de fondo */
+@keyframes acercamiento-lento {
+  from { transform: scale(1.12); }
+  to { transform: scale(1); }
+}
+.animacion-portada { animation: acercamiento-lento 14s ease-out both; }
+
+@keyframes aparecer-suave {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animacion-aparecer { animation: aparecer-suave 0.9s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animacion-portada, .animacion-aparecer { animation: none; }
+}
+
+/* Desplazamiento suave al usar enlaces internos (#carta, #catalogo...) */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+/* Portal público: textura sutil de papel (ruido SVG en línea, sin archivos externos) */
+.papel {
+  background-color: #f5efe4;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.11 0 0 0 0 0.09 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)'/%3E%3C/svg%3E");
+}
+
+/* Carrusel de etapas: entrada del contenido según la dirección del cambio */
+@keyframes deslizar-desde-derecha {
+  from { opacity: 0; transform: translateX(36px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes deslizar-desde-izquierda {
+  from { opacity: 0; transform: translateX(-36px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animacion-desde-derecha { animation: deslizar-desde-derecha 0.5s ease-out both; }
+.animacion-desde-izquierda { animation: deslizar-desde-izquierda 0.5s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .animacion-desde-derecha, .animacion-desde-izquierda { animation: none; }
+}

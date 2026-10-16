@@ -1,0 +1,95 @@
+rules_version = '2';
+
+// Reglas de seguridad de Cloud Firestore para El Gosque.
+// Se publican copiando este archivo en Firebase Console > Firestore Database > Reglas.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Funciones auxiliares ----------
+    function estaAutenticado() {
+      return request.auth != null;
+    }
+
+    function esPropietario(uid) {
+      return estaAutenticado() && request.auth.uid == uid;
+    }
+
+    // El rol se lee del perfil en Firestore; solo se asigna "admin" manualmente desde la consola
+    function esAdmin() {
+      return estaAutenticado()
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
+    }
+
+    // ---------- usuarios/{uid} (REQ-F02) ----------
+    match /usuarios/{uid} {
+      allow read: if esPropietario(uid) || esAdmin();
+
+      // Registro: solo su propio documento, siempre como "cliente" y con consentimiento de datos (RN-15)
+      allow create: if esPropietario(uid)
+        && request.resource.data.keys().hasOnly(['nombre', 'negocio', 'ciudad', 'telefono', 'email', 'rol', 'aceptaPrivacidad', 'fechaRegistro'])
+        && request.resource.data.rol == 'cliente'
+        && request.resource.data.aceptaPrivacidad == true
+        && request.resource.data.fechaRegistro == request.time;
+
+      // El cliente puede editar sus datos pero nunca su rol
+      allow update: if (esPropietario(uid) && request.resource.data.rol == resource.data.rol) || esAdmin();
+
+      allow delete: if false;
+    }
+
+    // ---------- productos/{id} (REQ-F03) ----------
+    match /productos/{productoId} {
+      // Público: solo productos activos. Admin: todos.
+      allow read: if resource.data.activo == true || esAdmin();
+      allow create, update: if esAdmin();
+      // El admin puede eliminar productos; los pedidos conservan su propia copia de los datos
+      allow delete: if esAdmin();
+    }
+
+    // ---------- cafeteria/{id}: carta de la cafetería (REQ-F13) ----------
+    match /cafeteria/{preparacionId} {
+      // Público: solo preparaciones visibles. Admin: todas.
+      allow read: if resource.data.activo == true || esAdmin();
+      allow create, update: if esAdmin();
+      allow delete: if false;
+    }
+
+    // ---------- ajustes/{doc}: institucional, trazabilidad y fotos de cafetería (REQ-F01, F04, F13) ----------
+    match /ajustes/{docId} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    // ---------- pedidos/{id}: solicitudes y pedidos (REQ-F05, F07, F08, F09, F10) ----------
+    match /pedidos/{pedidoId} {
+      // RN-05 / REQ-F07-04: el cliente solo ve sus propios pedidos
+      allow read: if esAdmin() || (estaAutenticado() && resource.data.clienteId == request.auth.uid);
+
+      // RN-03: el cliente solo crea solicitudes propias en estado Pendiente,
+      // sin datos de pago, envío ni historial (eso lo registra el administrador)
+      allow create: if estaAutenticado()
+        && request.resource.data.clienteId == request.auth.uid
+        && request.resource.data.estado == 'Pendiente'
+        && request.resource.data.fecha == request.time
+        && request.resource.data.productos is list
+        && request.resource.data.productos.size() > 0
+        && request.resource.data.total is number
+        && request.resource.data.keys().hasOnly([
+             'codigo', 'clienteId', 'clienteNombre', 'clienteEmail', 'telefono', 'ciudad',
+             'negocio', 'frecuencia', 'productos', 'total', 'estado', 'origen', 'fecha'
+           ]);
+
+      // RN-04: solo el administrador confirma ventas, valida pagos y cambia estados
+      allow update: if esAdmin();
+
+      // RN-06: los pedidos (incluidos cancelados o denegados) no se eliminan
+      allow delete: if false;
+    }
+
+    // Cualquier otra colección queda bloqueada
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

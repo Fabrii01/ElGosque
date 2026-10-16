@@ -1,21 +1,31 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Trazabilidad from './pages/Trazabilidad';
-import AdminDashboard from './pages/AdminDashboard'; 
-import MisPedidos from './pages/MisPedidos';
+import PaginaInicio from './modules/contenido-institucional/PaginaInicio';
+import PaginaAcceso from './modules/inicio-sesion/PaginaAcceso';
+import PaginaTrazabilidad from './modules/trazabilidad/PaginaTrazabilidad';
+import PaginaMisPedidos from './modules/gestion-pedidos/PaginaMisPedidos';
+import PaginaCartaCafeteria from './modules/cafeteria/PaginaCartaCafeteria';
+
+// El panel admin (con la librería de gráficos) se descarga solo al entrar a /admin
+const PanelAdmin = lazy(() => import('./modules/dashboard/PanelAdmin'));
+
+const Cargando = () => (
+  <div className="min-h-screen flex items-center justify-center bg-cafe-crema"><p className="text-xl font-bold text-cafe-hoja">Cargando...</p></div>
+);
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/trazabilidad" element={<Trazabilidad />} />
-        <Route path="/admin" element={<AdminDashboard />} /> {/* Ruta para el administrador */}
-        <Route path="/productos-cafeteria" element={<div className="p-20 text-center text-2xl font-bold">Catálogo Completo de la Cafetería (En construcción)</div>} />
-        <Route path="/mis-pedidos" element={<MisPedidos />} />
-      </Routes>
+      <Suspense fallback={<Cargando />}>
+        <Routes>
+          <Route path="/" element={<PaginaInicio />} />
+          <Route path="/login" element={<PaginaAcceso />} />
+          <Route path="/trazabilidad" element={<PaginaTrazabilidad />} />
+          <Route path="/admin" element={<PanelAdmin />} /> {/* Ruta para el administrador */}
+          <Route path="/productos-cafeteria" element={<PaginaCartaCafeteria />} />
+          <Route path="/mis-pedidos" element={<PaginaMisPedidos />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
