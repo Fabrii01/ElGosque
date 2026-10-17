@@ -17,7 +17,7 @@ const AsistenteIA = ({ userData, catalogo, trazabilidad }) => {
   const [mensajes, setMensajes] = useState([
     {
       remitente: 'ia',
-      texto: `¡Hola, ${userData.nombre?.split(' ')[0] || 'cliente'}! Soy el asistente virtual de El Gosque. Puedo contarte sobre nuestras variedades de café, su trazabilidad y la cafetería, o ayudarte a registrar una solicitud de cotización.`
+      texto: `¡Hola, ${userData.nombre?.split(' ')[0] || 'cliente'}! Soy el asistente virtual de El Gosque. Puedo contarte sobre nuestras variedades de café, su trazabilidad y la cafetería, o ayudarte a registrar una solicitud de pedido.`
     }
   ]);
   const [inputTexto, setInputTexto] = useState('');
@@ -131,7 +131,7 @@ const AsistenteIA = ({ userData, catalogo, trazabilidad }) => {
           <form onSubmit={enviarMensaje} className="p-3 bg-cafe-leche border-t border-cafe-espresso/10 flex gap-2">
             <input
               type="text"
-              placeholder="Pregunta por variedades o cotiza..."
+              placeholder="Pregunta por variedades o haz tu pedido..."
               className="flex-1 bg-cafe-crema border border-cafe-espresso/15 p-2.5 rounded-sm text-xs outline-none focus:ring-2 focus:ring-cafe-hoja"
               value={inputTexto}
               onChange={(e) => setInputTexto(e.target.value)}

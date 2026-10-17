@@ -16,6 +16,8 @@ const BarraNavegacion = ({ userData, cantidadCarrito, onAbrirCarrito }) => {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const cerrarMenu = () => setMenuAbierto(false);
   const nombreCorto = userData?.nombre?.split(' ')[0] || 'Cliente';
+  // El admin no hace pedidos: no ve "Mis pedidos" ni "Mi pedido"
+  const esAdmin = userData?.rol === 'admin';
 
   return (
     <nav className="sticky top-0 z-50 bg-cafe-crema/95 backdrop-blur-md border-b border-cafe-espresso/10 font-cuerpo">
@@ -30,11 +32,16 @@ const BarraNavegacion = ({ userData, cantidadCarrito, onAbrirCarrito }) => {
 
           {userData ? (
             <div className="flex items-center gap-5">
-              {userData.rol === 'admin' && <Link to="/admin" className="text-cafe-cereza font-medium hover:underline underline-offset-4">Panel admin</Link>}
-              <Link to="/mis-pedidos" className={enlaceClase}>Mis pedidos</Link>
-              <button onClick={onAbrirCarrito} className="border border-cafe-espresso text-cafe-espresso px-4 py-2 rounded-sm hover:bg-cafe-espresso hover:text-cafe-crema transition-colors">
-                Mi pedido <span className="tabular-nums">({cantidadCarrito})</span>
-              </button>
+              {esAdmin ? (
+                <Link to="/admin" className="text-cafe-cereza font-medium hover:underline underline-offset-4">Panel admin</Link>
+              ) : (
+                <>
+                  <Link to="/mis-pedidos" className={enlaceClase}>Mis pedidos</Link>
+                  <button onClick={onAbrirCarrito} className="border border-cafe-espresso text-cafe-espresso px-4 py-2 rounded-sm hover:bg-cafe-espresso hover:text-cafe-crema transition-colors">
+                    Mi pedido <span className="tabular-nums">({cantidadCarrito})</span>
+                  </button>
+                </>
+              )}
               <button onClick={cerrarSesion} className="text-cafe-tostado/80 hover:text-cafe-cereza" title={`Sesión de ${nombreCorto}`}>Salir</button>
             </div>
           ) : (
@@ -44,7 +51,7 @@ const BarraNavegacion = ({ userData, cantidadCarrito, onAbrirCarrito }) => {
 
         {/* CELULAR Y TABLET */}
         <div className="flex lg:hidden items-center gap-2">
-          {userData && (
+          {userData && !esAdmin && (
             <button onClick={onAbrirCarrito} className="border border-cafe-espresso text-cafe-espresso text-sm px-3 py-1.5 rounded-sm" aria-label={`Abrir mi pedido (${cantidadCarrito} productos)`}>
               Pedido ({cantidadCarrito})
             </button>
@@ -75,8 +82,8 @@ const BarraNavegacion = ({ userData, cantidadCarrito, onAbrirCarrito }) => {
             {userData ? (
               <>
                 <p className="pt-5 pb-2 text-xs uppercase tracking-[0.2em] text-cafe-tostado">Hola, {nombreCorto}</p>
-                <Link to="/mis-pedidos" className="py-3 border-b border-cafe-espresso/10 text-cafe-espresso">Mis pedidos</Link>
-                {userData.rol === 'admin' && <Link to="/admin" className="py-3 border-b border-cafe-espresso/10 text-cafe-cereza font-medium">Panel admin</Link>}
+                {!esAdmin && <Link to="/mis-pedidos" className="py-3 border-b border-cafe-espresso/10 text-cafe-espresso">Mis pedidos</Link>}
+                {esAdmin && <Link to="/admin" className="py-3 border-b border-cafe-espresso/10 text-cafe-cereza font-medium">Panel admin</Link>}
                 <button onClick={() => { cerrarMenu(); cerrarSesion(); }} className="py-3 text-left text-cafe-tostado">Salir</button>
               </>
             ) : (

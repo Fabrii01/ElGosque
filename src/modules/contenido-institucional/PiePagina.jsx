@@ -32,7 +32,7 @@ const PiePagina = () => (
         <p>{HORARIO_CAFETERIA}</p>
         <Link to="/productos-cafeteria#visitanos" className="inline-block text-cafe-mostaza hover:text-cafe-crema">Cómo llegar →</Link>
       </Columna>
-      <Columna titulo="Pedidos al por mayor">
+      <Columna titulo="Contacto">
         <p>WhatsApp: <a href={`https://wa.me/${NUMERO_WHATSAPP}`} target="_blank" rel="noopener noreferrer" className="text-cafe-crema hover:text-cafe-mostaza">{telefonoLegible}</a></p>
         <Link to="/login" className="block hover:text-cafe-crema">Crear cuenta de cliente</Link>
       </Columna>

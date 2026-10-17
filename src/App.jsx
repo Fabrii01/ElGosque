@@ -5,6 +5,7 @@ import PaginaAcceso from './modules/inicio-sesion/PaginaAcceso';
 import PaginaTrazabilidad from './modules/trazabilidad/PaginaTrazabilidad';
 import PaginaMisPedidos from './modules/gestion-pedidos/PaginaMisPedidos';
 import PaginaCartaCafeteria from './modules/cafeteria/PaginaCartaCafeteria';
+import SubirAlCambiarRuta from './shared/components/SubirAlCambiarRuta';
 
 // El panel admin (con la librería de gráficos) se descarga solo al entrar a /admin
 const PanelAdmin = lazy(() => import('./modules/dashboard/PanelAdmin'));
@@ -16,6 +17,7 @@ const Cargando = () => (
 function App() {
   return (
     <BrowserRouter>
+      <SubirAlCambiarRuta />
       <Suspense fallback={<Cargando />}>
         <Routes>
           <Route path="/" element={<PaginaInicio />} />

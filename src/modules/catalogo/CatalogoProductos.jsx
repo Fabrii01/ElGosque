@@ -57,14 +57,17 @@ const CatalogoProductos = ({ productos, cargando, onAgregar }) => (
                     <dt className="text-cafe-tostado">Peso</dt><dd className="text-right text-cafe-espresso">{producto.peso}</dd>
                   </dl>
                   {producto.descripcion && <p className="mt-3 text-sm text-cafe-tostado leading-relaxed line-clamp-3">{producto.descripcion}</p>}
-                  <div className="mt-auto pt-6">
-                    <button
-                      onClick={() => onAgregar(producto)}
-                      className="w-full bg-cafe-hoja text-cafe-crema py-2.5 rounded-sm hover:bg-cafe-selva transition-colors text-sm"
-                    >
-                      Solicitar cotización
-                    </button>
-                  </div>
+                  {/* Sin onAgregar (rol admin) no se muestra el botón de pedido */}
+                  {onAgregar && (
+                    <div className="mt-auto pt-6">
+                      <button
+                        onClick={() => onAgregar(producto)}
+                        className="w-full bg-cafe-hoja text-cafe-crema py-2.5 rounded-sm hover:bg-cafe-selva transition-colors text-sm"
+                      >
+                        Solicitar pedido
+                      </button>
+                    </div>
+                  )}
                 </div>
               </article>
             </Revelar>

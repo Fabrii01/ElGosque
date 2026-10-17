@@ -1,10 +1,10 @@
-import { categoriasExistentes } from './carta';
+import { CATEGORIAS_CAFETERIA } from './carta';
 import { formatearSoles } from '../../shared/utils/formato';
 
 // Carta de la cafetería: alta, edición y visibilidad de preparaciones (REQ-F13-02)
 const AdminCartaCafeteria = ({
   preparaciones, nuevaPreparacion, setNuevaPreparacion, idEdicion, imagenArchivo, setImagenArchivo, guardando,
-  guardarPreparacion, editarPreparacion, cancelarEdicion, toggleActivo,
+  guardarPreparacion, editarPreparacion, cancelarEdicion, toggleActivo, cargarCartaInicial,
 }) => {
   const actualizar = (campo, valor) => setNuevaPreparacion({ ...nuevaPreparacion, [campo]: valor });
 
@@ -20,10 +20,14 @@ const AdminCartaCafeteria = ({
           </div>
           <div>
             <label className="block text-xs font-bold text-cafe-tostado uppercase mb-1">Categoría</label>
-            <input type="text" required list="categorias-cafeteria" className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm outline-none" value={nuevaPreparacion.categoria} onChange={e => actualizar('categoria', e.target.value)} placeholder="Ej. Cafés calientes" />
-            <datalist id="categorias-cafeteria">
-              {categoriasExistentes(preparaciones).map(c => <option key={c} value={c} />)}
-            </datalist>
+            <select required className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm outline-none" value={nuevaPreparacion.categoria} onChange={e => actualizar('categoria', e.target.value)}>
+              <option value="" disabled>Elige una categoría</option>
+              {CATEGORIAS_CAFETERIA.map(c => <option key={c} value={c}>{c}</option>)}
+              {/* Preparaciones antiguas con una categoría fuera de la lista: se conserva hasta que se cambie */}
+              {nuevaPreparacion.categoria && !CATEGORIAS_CAFETERIA.includes(nuevaPreparacion.categoria) && (
+                <option value={nuevaPreparacion.categoria}>{nuevaPreparacion.categoria} (anterior)</option>
+              )}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-bold text-cafe-tostado uppercase mb-1">Precio (S/)</label>
@@ -43,6 +47,11 @@ const AdminCartaCafeteria = ({
             {idEdicion && <button type="button" onClick={cancelarEdicion} className="bg-cafe-arena font-bold py-3 px-8 rounded-sm">Cancelar</button>}
           </div>
         </form>
+      </div>
+
+      <div className="bg-cafe-leche rounded-md shadow-sm border border-cafe-espresso/10 p-5 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-cafe-tostado">Carga los productos de la carta impresa (sin foto). No duplica los que ya existen con el mismo nombre.</p>
+        <button type="button" onClick={cargarCartaInicial} disabled={guardando} className="bg-cafe-tostado text-cafe-crema font-bold py-2.5 px-6 rounded-sm hover:bg-cafe-espresso disabled:bg-cafe-kraft">Cargar carta impresa</button>
       </div>
 
       <div className="bg-cafe-leche rounded-md shadow-sm border border-cafe-espresso/10 overflow-x-auto">

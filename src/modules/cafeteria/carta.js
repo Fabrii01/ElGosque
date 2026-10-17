@@ -16,3 +16,6 @@ export const agruparPorCategoria = (preparaciones) => {
 };
 
 export const categoriasExistentes = (preparaciones) => [...new Set(preparaciones.map(p => p.categoria?.trim()).filter(Boolean))].sort();
+
+// Categorías fijas de la carta (el admin las elige de una lista, no las escribe)
+export const CATEGORIAS_CAFETERIA = ['Postres', 'Café', 'Sandwich', 'Jugos', 'Desayunos Especiales'];

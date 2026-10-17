@@ -4,6 +4,7 @@ import {
   obtenerFotosCafeteria, guardarFotosCafeteria,
 } from './cafeteriaService';
 import { MAX_FOTOS_LOCAL } from './carta';
+import { CARTA_INICIAL } from './cartaInicial';
 import { comprimirImagen, comprimirImagenHasta } from '../../shared/utils/imagenes';
 
 const estadoInicialPreparacion = { nombre: '', categoria: '', descripcion: '', precio: '', imagenUrl: '' };
@@ -62,6 +63,24 @@ export const useCafeteriaAdmin = (habilitado) => {
   const cancelarEdicion = () => { setIdEdicion(null); setNuevaPreparacion(estadoInicialPreparacion); setImagenArchivo(null); };
   const toggleActivo = async (id, estadoActual) => { await cambiarEstadoPreparacion(id, estadoActual); cargarPreparaciones(); };
 
+  // Carga la carta impresa; omite las preparaciones que ya existen con el mismo nombre (no duplica)
+  const cargarCartaInicial = async () => {
+    const existentes = new Set(preparaciones.map(p => p.nombre.trim().toLowerCase()));
+    const faltantes = CARTA_INICIAL.filter(p => !existentes.has(p.nombre.toLowerCase()));
+    if (faltantes.length === 0) return alert('La carta ya tiene todas esas preparaciones.');
+    if (!window.confirm(`Se agregarán ${faltantes.length} preparaciones de la carta impresa (sin foto). ¿Continuar?`)) return;
+    setGuardando(true);
+    try {
+      await Promise.all(faltantes.map(p => crearPreparacion({ ...p, imagenUrl: '' })));
+    } catch (error) {
+      console.error(error);
+      alert(error.message || 'No se pudo cargar la carta');
+    } finally {
+      setGuardando(false);
+      cargarPreparaciones();
+    }
+  };
+
   const agregarFoto = async (archivo) => {
     if (!archivo) return;
     if (fotos.length >= MAX_FOTOS_LOCAL) return alert(`Máximo ${MAX_FOTOS_LOCAL} fotos del local.`);
@@ -86,7 +105,7 @@ export const useCafeteriaAdmin = (habilitado) => {
 
   return {
     preparaciones, nuevaPreparacion, setNuevaPreparacion, idEdicion, imagenArchivo, setImagenArchivo, guardando,
-    guardarPreparacion, editarPreparacion, cancelarEdicion, toggleActivo,
+    guardarPreparacion, editarPreparacion, cancelarEdicion, toggleActivo, cargarCartaInicial,
     fotos, subiendoFoto, agregarFoto, eliminarFoto,
   };
 };

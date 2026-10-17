@@ -19,9 +19,9 @@ const PaginaAcceso = () => {
           <div className="hidden lg:flex flex-col bg-cafe-selva text-cafe-crema">
             <div className="p-10">
               <p className="text-xs uppercase tracking-[0.25em] text-cafe-mostaza">Clientes El Gosque</p>
-              <h1 className="font-titulo font-light text-4xl mt-4 leading-tight">Cotiza café de origen<br />para tu negocio</h1>
+              <h1 className="font-titulo font-light text-4xl mt-4 leading-tight">Pide café de origen<br />para tu negocio</h1>
               <ul className="mt-6 space-y-2 text-sm text-cafe-crema/90">
-                <li>· Solicita cotizaciones de nuestras variedades</li>
+                <li>· Solicita pedidos de nuestras variedades</li>
                 <li>· Revisa el estado de tus pedidos</li>
                 <li>· Usa el asistente virtual de El Gosque</li>
               </ul>
@@ -35,7 +35,7 @@ const PaginaAcceso = () => {
               {isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
             </h2>
             <p className="text-sm text-cafe-tostado mt-1 mb-6">
-              {isRegister ? 'Regístrate para solicitar cotizaciones.' : 'Ingresa con tu correo y contraseña.'}
+              {isRegister ? 'Regístrate para solicitar pedidos.' : 'Ingresa con tu correo y contraseña.'}
             </p>
 
             {isRegister ? <FormRegistroCliente /> : <FormInicioSesion />}

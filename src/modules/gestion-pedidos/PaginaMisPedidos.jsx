@@ -54,14 +54,14 @@ const PaginaMisPedidos = () => {
           <div className="bg-cafe-leche p-12 rounded-md text-center border border-cafe-espresso/10 shadow-sm">
             <GranoCafe className="w-12 h-14 mx-auto mb-4 text-cafe-kraft" />
             <h3 className="text-xl font-bold text-cafe-espresso mb-2">Aún no tienes pedidos</h3>
-            <p className="text-cafe-tostado/80 mb-6">Explora nuestro catálogo y realiza tu primera solicitud de cotización.</p>
+            <p className="text-cafe-tostado/80 mb-6">Explora nuestro catálogo y realiza tu primera solicitud de pedido.</p>
             <Link to="/" className="bg-cafe-hoja text-white font-bold py-3 px-8 rounded-sm hover:bg-cafe-selva transition">Ver Catálogo</Link>
           </div>
         ) : (
           <div className="space-y-12">
             <section>
               <h2 className="font-titulo text-2xl text-cafe-crema bg-cafe-tostado rounded-sm px-4 py-2 mb-2">Solicitudes en revisión ({solicitudes.length})</h2>
-              <p className="text-sm text-cafe-tostado/80 mb-5">Cotizaciones que el administrador aún no confirma. Los precios son referenciales.</p>
+              <p className="text-sm text-cafe-tostado/80 mb-5">Solicitudes que el administrador aún no confirma. Los precios son referenciales.</p>
               <div className="space-y-6">
                 {solicitudes.map(pedido => <TarjetaPedidoCliente key={pedido.id} pedido={pedido} />)}
                 {solicitudes.length === 0 && <p className="text-sm text-cafe-tostado/70 italic">No tienes solicitudes pendientes.</p>}
