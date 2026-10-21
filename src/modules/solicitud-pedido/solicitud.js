@@ -5,6 +5,12 @@ export const FRECUENCIAS_COMPRA = ['Única vez', 'Semanal', 'Quincenal', 'Mensua
 // El café verde solo se vende en grano
 export const presentacionesDisponibles = (producto) => (producto.tipo === 'Verde' ? ['En grano'] : ['En grano', 'Molido']);
 
+// Corrige la presentación de un producto del catálogo si no es válida para su tipo (p. ej. Verde + Molido)
+export const ajustarPresentacion = (producto) => {
+  const disponibles = presentacionesDisponibles(producto);
+  return disponibles.includes(producto.presentacion) ? producto : { ...producto, presentacion: disponibles[0] };
+};
+
 // El precio sale siempre del catálogo (precio referencial, RN-01)
 export const crearItemSolicitud = (producto, cantidad, presentacion, peso) => {
   const precioUnitario = parseFloat(producto.precioReferencial) || 0;

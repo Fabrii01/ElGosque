@@ -1,4 +1,5 @@
 import { VARIEDADES_CAFE } from '../../shared/constants';
+import { presentacionesDisponibles, ajustarPresentacion } from '../solicitud-pedido/solicitud';
 import ModalEliminarProducto from './ModalEliminarProducto';
 
 const AdminCatalogo = ({
@@ -23,11 +24,13 @@ const AdminCatalogo = ({
         </div>
         <div>
           <label className="block text-xs font-bold text-cafe-tostado uppercase mb-1">Tipo</label>
-          <select className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm outline-none" value={nuevoProducto.tipo} onChange={e => setNuevoProducto({...nuevoProducto, tipo: e.target.value})}><option>Tostado</option><option>Verde</option></select>
+          <select className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm outline-none" value={nuevoProducto.tipo} onChange={e => setNuevoProducto(ajustarPresentacion({...nuevoProducto, tipo: e.target.value}))}><option>Tostado</option><option>Verde</option></select>
         </div>
         <div>
           <label className="block text-xs font-bold text-cafe-tostado uppercase mb-1">Presentación</label>
-          <select className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm outline-none" value={nuevoProducto.presentacion} onChange={e => setNuevoProducto({...nuevoProducto, presentacion: e.target.value})}><option>En grano</option><option>Molido</option></select>
+          <select className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm outline-none" value={nuevoProducto.presentacion} onChange={e => setNuevoProducto({...nuevoProducto, presentacion: e.target.value})}>
+            {presentacionesDisponibles(nuevoProducto).map(presentacion => <option key={presentacion}>{presentacion}</option>)}
+          </select>
         </div>
         <div>
           <label className="block text-xs font-bold text-cafe-tostado uppercase mb-1">Peso</label>

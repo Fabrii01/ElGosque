@@ -85,14 +85,16 @@ const esVenta = (p) => ESTADOS_VENTA_CONCRETADA.includes(p.estado);
 const unidadesDe = (p) => (p.productos || []).reduce((sum, i) => sum + (Number(i.cantidad) || 0), 0);
 const proporcion = (parte, base) => (base > 0 ? parte / base : null);
 
-// Agrupa en { nombre, ingresos, pedidos }, ordena por ingresos y junta la cola en "Otros"
+// Agrupa en { nombre, ingresos, pedidos }, ordena por ingresos y junta la cola en "Otros".
+// Sin distinguir mayúsculas ("Trujillo" = "trujillo"); se muestra el nombre escrito la primera vez.
 const agruparVentas = (ventas, obtenerNombre, limite = MAX_CATEGORIAS) => {
   const grupos = {};
   ventas.forEach(p => {
     const nombre = obtenerNombre(p);
-    grupos[nombre] ||= { nombre, ingresos: 0, pedidos: 0 };
-    grupos[nombre].ingresos += p.total || 0;
-    grupos[nombre].pedidos += 1;
+    const clave = nombre.toLocaleLowerCase('es');
+    grupos[clave] ||= { nombre, ingresos: 0, pedidos: 0 };
+    grupos[clave].ingresos += p.total || 0;
+    grupos[clave].pedidos += 1;
   });
   const lista = Object.values(grupos).sort((a, b) => b.ingresos - a.ingresos);
   if (lista.length <= limite) return lista;

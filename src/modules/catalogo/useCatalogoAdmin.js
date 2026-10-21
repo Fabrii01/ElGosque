@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { obtenerProductos, crearProducto, actualizarProducto, cambiarEstadoProducto, eliminarProducto } from './productosService';
 import { comprimirImagen } from '../../shared/utils/imagenes';
+import { ajustarPresentacion } from '../solicitud-pedido/solicitud';
 
 const estadoInicialProducto = { nombre: 'Gourmet', descripcion: '', tipo: 'Tostado', presentacion: 'En grano', peso: '1 kg', precioReferencial: '' };
 
@@ -27,7 +28,8 @@ export const useCatalogoAdmin = (habilitado) => {
       let urlImagen = nuevoProducto.imagenUrl || "";
       // Se redimensiona y comprime en el navegador (fotos de celular de varios MB funcionan)
       if (imagenArchivo) urlImagen = await comprimirImagen(imagenArchivo, { maxLado: 900 });
-      const datosFinales = { ...nuevoProducto, imagenUrl: urlImagen };
+      // El café verde solo se vende en grano (también al editar un producto guardado antes como "Molido")
+      const datosFinales = { ...ajustarPresentacion(nuevoProducto), imagenUrl: urlImagen };
       if (idEdicion) { await actualizarProducto(idEdicion, datosFinales); setIdEdicion(null); }
       else { await crearProducto(datosFinales); }
       setNuevoProducto(estadoInicialProducto); setImagenArchivo(null); cargarProductos();

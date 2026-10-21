@@ -32,7 +32,10 @@ export const construirSolicitudIA = (jsonSolicitud, { userData, catalogo }) => {
     const cantidad = Number(item.cantidad);
     if (!Number.isInteger(cantidad) || cantidad < 1) throw new Error(`La cantidad de ${producto.nombre} no es válida.`);
 
-    const presentacion = presentacionesDisponibles(producto).includes(item.presentacion) ? item.presentacion : producto.presentacion;
+    // Si la IA pide una presentación no permitida se usa la del producto, solo si es válida para su tipo
+    // (el catálogo podría tener un café verde guardado como "Molido")
+    const disponibles = presentacionesDisponibles(producto);
+    const presentacion = [item.presentacion, producto.presentacion].find(p => disponibles.includes(p)) || disponibles[0];
     // El peso es fijo por producto: el precio referencial corresponde a ese peso
     return crearItemSolicitud(producto, cantidad, presentacion, producto.peso);
   });

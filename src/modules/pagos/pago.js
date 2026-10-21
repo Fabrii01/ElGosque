@@ -24,6 +24,7 @@ export const tienePagoRegistrado = (datosPago) => Boolean(datosPago && datosPago
 export const validarPago = (nuevoEstado, pago) => {
   if (nuevoEstado !== 'Pagado') return null;
   if (!tienePagoRegistrado(pago)) return "Para marcar como Pagado registra medio, monto y fecha de pago.";
+  if (!(Number(pago.monto) > 0)) return "El monto pagado debe ser un número mayor que 0.";
   if (requiereNroOperacion(pago.metodo) && !pago.nroOperacion.trim()) return "Falta Número de Operación.";
   return null;
 };
