@@ -1,9 +1,11 @@
-import { mapaParaMostrar } from './multimedia';
+import ReproductorVideo from './ReproductorVideo';
+import { mapaParaMostrar, interpretarVideo } from './multimedia';
 
 // Datos de la sección "Visítanos": dirección, mapa de Google Maps y video opcional de cómo llegar
 const AdminUbicacionCafeteria = ({ ubicacion, setUbicacion, guardandoUbicacion, guardarUbicacion }) => {
   const actualizar = (campo, valor) => setUbicacion({ ...ubicacion, [campo]: valor });
   const mapa = mapaParaMostrar(ubicacion);
+  const hayVideo = interpretarVideo(ubicacion.videoUrl);
 
   return (
     <div className="bg-cafe-leche rounded-md shadow-sm border border-cafe-espresso/10 p-5 md:p-8">
@@ -32,6 +34,13 @@ const AdminUbicacionCafeteria = ({ ubicacion, setUbicacion, guardandoUbicacion, 
           <label className="block text-xs font-bold text-cafe-tostado uppercase mb-1">Video de cómo llegar (opcional)</label>
           <input type="url" className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm outline-none" value={ubicacion.videoUrl} onChange={e => actualizar('videoUrl', e.target.value)} placeholder="https://youtu.be/..." />
         </div>
+
+        {hayVideo && (
+          <div className="md:col-span-2 max-w-md">
+            <p className="text-xs font-bold text-cafe-tostado/80 uppercase mb-2">Vista previa del video</p>
+            <ReproductorVideo url={ubicacion.videoUrl} titulo="Cómo llegar a la cafetería El Gosque" />
+          </div>
+        )}
 
         {mapa && (
           <div className="md:col-span-2">
