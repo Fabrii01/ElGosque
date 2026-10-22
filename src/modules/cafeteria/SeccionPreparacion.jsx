@@ -11,7 +11,7 @@ const SeccionPreparacion = ({ videos }) => (
       <div className={`grid gap-10 md:gap-12 ${videos.length > 1 ? 'md:grid-cols-2' : 'max-w-4xl mx-auto'}`}>
         {videos.map((v, i) => (
           <Revelar key={v.id} retraso={(i % 2) * 150}>
-            <ReproductorVideo url={v.url} titulo={v.titulo} />
+            <ReproductorVideo url={v.url} titulo={v.titulo} miniatura={v.miniatura} />
             {(v.titulo || v.descripcion) && (
               <div className="mt-5">
                 {v.titulo && <h3 className="text-xl font-bold text-white">{v.titulo}</h3>}

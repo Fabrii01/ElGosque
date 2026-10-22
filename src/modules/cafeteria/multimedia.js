@@ -46,6 +46,28 @@ export const interpretarVideo = (texto) => {
   return null;
 };
 
+// Miniatura automática: la de YouTube o, en videos de Cloudinary, el fotograma del segundo 1
+// (Cloudinary genera la imagen al pedir el mismo enlace con "so_1" y extensión .jpg)
+export const miniaturaAutomatica = (url) => {
+  const video = interpretarVideo(url);
+  if (!video) return null;
+  if (video.tipo === 'youtube') return video.miniatura;
+  const enlace = new URL(video.src);
+  if (enlace.hostname !== 'res.cloudinary.com' || !enlace.pathname.includes('/video/upload/')) return null;
+  enlace.pathname = enlace.pathname.replace('/video/upload/', '/video/upload/so_1/').replace(/\.[^./]+$/, '.jpg');
+  return enlace.href;
+};
+
+// Archivos de video que se pueden subir desde el panel (Cloudinary)
+export const TIPOS_VIDEO_SUBIBLES = ['video/mp4', 'video/webm'];
+export const MAX_MB_VIDEO = 100;
+
+export const validarArchivoVideo = (archivo) => {
+  if (!archivo || !TIPOS_VIDEO_SUBIBLES.includes(archivo.type)) return 'El video debe ser un archivo .mp4 o .webm.';
+  if (archivo.size > MAX_MB_VIDEO * 1024 * 1024) return `El video supera los ${MAX_MB_VIDEO} MB. Comprímelo antes de subirlo.`;
+  return null;
+};
+
 // Acepta el código <iframe> de "Compartir > Insertar un mapa" de Google Maps o solo su src
 export const interpretarMapaEmbebido = (texto) => {
   const entrada = String(texto || '').trim();

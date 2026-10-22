@@ -72,7 +72,7 @@ const SeccionVisitanos = ({ ubicacion }) => {
         {hayVideo && (
           <Revelar className="mt-12 max-w-4xl mx-auto">
             <h3 className="text-xl font-bold text-cafe-espresso mb-4 text-center">Así llegas a nuestro local</h3>
-            <ReproductorVideo url={ubicacion.videoUrl} titulo="Cómo llegar a la cafetería El Gosque" />
+            <ReproductorVideo url={ubicacion.videoUrl} titulo="Cómo llegar a la cafetería El Gosque" miniatura={ubicacion.videoMiniatura} />
           </Revelar>
         )}
       </div>

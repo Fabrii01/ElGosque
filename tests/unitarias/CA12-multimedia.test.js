@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  interpretarVideo, interpretarMapaEmbebido, interpretarEnlaceMaps, mapaParaMostrar, enlaceComoLlegar,
+  interpretarVideo, interpretarMapaEmbebido, interpretarEnlaceMaps, mapaParaMostrar, enlaceComoLlegar, validarArchivoVideo, miniaturaAutomatica,
 } from '../../src/modules/cafeteria/multimedia';
 
 // CA12 - Videos y mapas de la cafetería (multimedia.js) | REQ-F04-02, REQ-F13-03, REQ-F13-04, REQ-F13-05
@@ -60,5 +60,45 @@ describe('CA12 - Videos y mapas de la cafetería (multimedia.js)', () => {
 
   it('12.0 [–] «Cómo llegar» sin dirección ni enlace', () => {
     expect(enlaceComoLlegar({ direccion: '   ' })).toBeNull();
+  });
+});
+
+// Ampliación posterior al plan: videos subidos desde el panel (Cloudinary)
+describe('Ampliación CA12 - Archivo de video para subir', () => {
+  const archivo = (type, mb) => ({ type, size: mb * 1024 * 1024 });
+
+  it('[+] Video .mp4 de 20 MB', () => {
+    expect(validarArchivoVideo(archivo('video/mp4', 20))).toBeNull();
+  });
+
+  it('[–] Formato no permitido o archivo que no es video', () => {
+    expect(validarArchivoVideo(archivo('video/quicktime', 20))).toBe('El video debe ser un archivo .mp4 o .webm.');
+    expect(validarArchivoVideo(archivo('image/png', 1))).toBe('El video debe ser un archivo .mp4 o .webm.');
+  });
+
+  it('[–] Video de más de 100 MB', () => {
+    expect(validarArchivoVideo(archivo('video/webm', 101))).toBe('El video supera los 100 MB. Comprímelo antes de subirlo.');
+  });
+
+  it('[+] El enlace que devuelve Cloudinary se reproduce como archivo directo', () => {
+    const enlace = 'https://res.cloudinary.com/ukht0909/video/upload/v1761000000/cafeteria/videos/metodo-v60.mp4';
+    expect(interpretarVideo(enlace)).toEqual({ tipo: 'archivo', src: enlace });
+  });
+});
+
+// Ampliación posterior al plan: miniatura automática de los videos
+describe('Ampliación CA12 - Miniatura automática', () => {
+  it('[+] Video de Cloudinary: fotograma del segundo 1 en .jpg', () => {
+    expect(miniaturaAutomatica('https://res.cloudinary.com/ukht0909/video/upload/v1761000000/cafeteria/videos/metodo-v60.mp4'))
+      .toBe('https://res.cloudinary.com/ukht0909/video/upload/so_1/v1761000000/cafeteria/videos/metodo-v60.jpg');
+  });
+
+  it('[+] Video de YouTube: su miniatura oficial', () => {
+    expect(miniaturaAutomatica('https://youtu.be/dQw4w9WgXcQ')).toBe('https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg');
+  });
+
+  it('[–] Otro archivo de video o enlace inválido: sin miniatura automática', () => {
+    expect(miniaturaAutomatica('https://firebasestorage.googleapis.com/v0/b/x/o/preparacion.mp4')).toBeNull();
+    expect(miniaturaAutomatica('no es un enlace')).toBeNull();
   });
 });

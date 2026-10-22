@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// Reglas de seguridad de Firebase Storage para El Gosque.
+// Se publican copiando este archivo en Firebase Console > Storage > Reglas.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // El rol se lee del perfil en Firestore (igual que en firestore.rules)
+    function esAdmin() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/usuarios/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
+    }
+
+    // ---------- Videos de la cafetería (Preparación y Ubicación, REQ-F13) ----------
+    match /cafeteria/videos/{archivo} {
+      // Público: se reproducen en la página de la cafetería
+      allow read: if true;
+      // Solo el admin sube videos .mp4/.webm de hasta 100 MB
+      allow create: if esAdmin()
+        && request.resource.size < 100 * 1024 * 1024
+        && request.resource.contentType.matches('video/(mp4|webm)');
+      allow delete: if esAdmin();
+      allow update: if false;
+    }
+
+    // Cualquier otra ruta queda bloqueada
+    match /{todo=**} {
+      allow read, write: if false;
+    }
+  }
+}
