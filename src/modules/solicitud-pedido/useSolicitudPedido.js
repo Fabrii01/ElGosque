@@ -36,7 +36,6 @@ export const useSolicitudPedido = (userData, { productos: catalogo, cargando: ca
     telefono: userData?.telefono || '',
     ciudad: userData?.ciudad || '',
     negocio: userData?.negocio || '',
-    frecuencia: 'Mensual',
     ...datosEditados,
   };
   const actualizarDatoPedido = (campo, valor) => setDatosEditados(prev => ({ ...prev, [campo]: valor }));

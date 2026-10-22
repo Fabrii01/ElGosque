@@ -3,7 +3,7 @@ import { presentacionesDisponibles, crearItemSolicitud, calcularTotalItems, crea
 
 // CA02 - Solicitud de pedido (solicitud.js) | REQ-F05-01, REQ-F05-02, REQ-F05-03, REQ-F05-08
 const userData = { uid: 'u1', nombre: 'Ana Torres', email: 'cliente01@correo.com' };
-const contacto = { telefono: '987654321', ciudad: 'Trujillo', negocio: 'Café Aroma SAC', frecuencia: 'Semanal' };
+const contacto = { telefono: '987654321', ciudad: 'Trujillo', negocio: 'Café Aroma SAC' };
 const productos = [{ nombre: 'Gourmet', cantidad: 2, peso: '1 kg', presentacion: 'En grano', precioUnitario: 45, subtotal: 90 }];
 const datosSolicitud = { codigo: 'REQ-20261019-ABC234', userData, contacto, productos };
 

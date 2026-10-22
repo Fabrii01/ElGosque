@@ -13,7 +13,7 @@ const catalogo = [
 ];
 const userData = { uid: 'u1', nombre: 'Ana Torres', email: 'cliente01@correo.com', telefono: '987654321', ciudad: 'Trujillo', negocio: 'Café Aroma SAC' };
 const contexto = { userData, catalogo };
-const json = (productos, frecuencia = 'Mensual') => JSON.stringify({ productos, frecuencia });
+const json = (productos) => JSON.stringify({ productos });
 
 describe('CA14 - Solicitud generada por el asistente de IA (solicitudIA.js)', () => {
   it('1.0 [+] Separar texto y etiqueta de solicitud', () => {
@@ -50,9 +50,8 @@ describe('CA14 - Solicitud generada por el asistente de IA (solicitudIA.js)', ()
     expect(() => construirSolicitudIA(json([]), contexto)).toThrow('La solicitud no tiene productos.');
   });
 
-  it('8.0 [–] Frecuencia inválida', () => {
-    expect(() => construirSolicitudIA(json([{ productoId: 'p1', cantidad: 1 }], 'Diaria'), contexto))
-      .toThrow('Falta indicar una frecuencia de compra válida.');
+  it('8.0 [–] Productos que no son una lista', () => {
+    expect(() => construirSolicitudIA(JSON.stringify({ productos: 'Geisha' }), contexto)).toThrow('La solicitud no tiene productos.');
   });
 
   it('9.0 [–] Producto que no está en el catálogo', () => {
@@ -83,5 +82,14 @@ describe('Corrección CA14 - Catálogo: café verde solo en grano', () => {
     const { ajustarPresentacion } = await import('../../src/modules/solicitud-pedido/solicitud');
     expect(ajustarPresentacion({ tipo: 'Verde', presentacion: 'Molido' }).presentacion).toBe('En grano');
     expect(ajustarPresentacion({ tipo: 'Tostado', presentacion: 'Molido' }).presentacion).toBe('Molido');
+  });
+});
+
+// Ampliación posterior al plan: la solicitud de la IA ya no lleva frecuencia de compra
+describe('Ampliación CA14 - Pedido de la IA sin frecuencia de compra', () => {
+  it('[+] La solicitud se registra sin el campo frecuencia', () => {
+    const solicitud = construirSolicitudIA(json([{ productoId: 'p1', cantidad: 1, presentacion: 'En grano' }]), contexto);
+    expect(solicitud).not.toHaveProperty('frecuencia');
+    expect(solicitud.total).toBe(45);
   });
 });

@@ -1,5 +1,3 @@
-import { FRECUENCIAS_COMPRA } from './solicitud';
-
 // Panel lateral con el carrito, datos de contacto y confirmación de la solicitud
 const CarritoPedido = ({
   carrito, productosRetirados, pedidoConfirmado, datosPedido, actualizarDatoPedido,
@@ -69,12 +67,6 @@ const CarritoPedido = ({
               <div>
                 <label className="block text-xs font-bold text-cafe-tostado mb-1">Tipo de Negocio</label>
                 <input type="text" required className="w-full border p-3 rounded-lg bg-cafe-crema outline-none" value={datosPedido.negocio} onChange={e => actualizarDatoPedido('negocio', e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-cafe-tostado mb-1">Frecuencia de Compra</label>
-                <select className="w-full border p-3 rounded-lg bg-cafe-crema outline-none" value={datosPedido.frecuencia} onChange={e => actualizarDatoPedido('frecuencia', e.target.value)}>
-                  {FRECUENCIAS_COMPRA.map(frecuencia => <option key={frecuencia}>{frecuencia}</option>)}
-                </select>
               </div>
             </form>
           </>

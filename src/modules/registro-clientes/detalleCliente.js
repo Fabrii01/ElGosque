@@ -35,7 +35,6 @@ export const calcularDetalleCliente = (cliente, pedidos) => {
       desdeIA: propios.filter(p => p.origen === 'Asistente IA').length,
       primeraCompra: fechasVenta.length ? { seconds: Math.min(...fechasVenta) } : null,
       ultimaCompra: fechasVenta.length ? { seconds: Math.max(...fechasVenta) } : null,
-      frecuenciaDeclarada: propios.find(p => p.frecuencia)?.frecuencia || null,
     },
     productosFavoritos: Object.values(productos).sort((a, b) => b.unidades - a.unidades).slice(0, 5),
   };

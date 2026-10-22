@@ -51,7 +51,7 @@ const AsistenteIA = ({ userData, catalogo, trazabilidad }) => {
     try {
       const solicitud = construirSolicitudIA(jsonSolicitud, { userData, catalogo });
       await registrarSolicitud(solicitud);
-      return `\n\n✅ Solicitud registrada con código ${solicitud.codigo}. Total referencial: S/ ${solicitud.total.toFixed(2)} (el precio final lo confirma el administrador). Puedes revisarla en "Mis Pedidos".`;
+      return `\n\n✅ Pedido registrado con código ${solicitud.codigo}. Total: S/ ${solicitud.total.toFixed(2)}. Puedes revisarlo en "Mis Pedidos".`;
     } catch (error) {
       console.error("Error al registrar la solicitud de la IA:", error);
       return `\n\n⚠️ No se pudo registrar la solicitud: ${error.message || 'error inesperado'} Revisemos los datos e inténtalo de nuevo.`;

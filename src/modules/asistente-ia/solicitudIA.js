@@ -1,4 +1,4 @@
-import { crearItemSolicitud, crearSolicitud, presentacionesDisponibles, FRECUENCIAS_COMPRA } from '../solicitud-pedido/solicitud';
+import { crearItemSolicitud, crearSolicitud, presentacionesDisponibles } from '../solicitud-pedido/solicitud';
 import { generarCodigoSolicitud } from '../solicitud-pedido/solicitudService';
 
 const PATRON_ETIQUETA = /<<<SOLICITUD:([\s\S]*?)>>>/;
@@ -23,7 +23,6 @@ export const construirSolicitudIA = (jsonSolicitud, { userData, catalogo }) => {
   }
 
   if (!Array.isArray(datos.productos) || datos.productos.length === 0) throw new Error('La solicitud no tiene productos.');
-  if (!FRECUENCIAS_COMPRA.includes(datos.frecuencia)) throw new Error('Falta indicar una frecuencia de compra válida.');
 
   const productos = datos.productos.map(item => {
     const producto = catalogo.find(p => p.id === item.productoId);
@@ -43,7 +42,7 @@ export const construirSolicitudIA = (jsonSolicitud, { userData, catalogo }) => {
   return crearSolicitud({
     codigo: generarCodigoSolicitud('IA-REQ'),
     userData,
-    contacto: { telefono: userData.telefono || '', ciudad: userData.ciudad || '', negocio: userData.negocio || '', frecuencia: datos.frecuencia },
+    contacto: { telefono: userData.telefono || '', ciudad: userData.ciudad || '', negocio: userData.negocio || '' },
     productos,
     origen: 'Asistente IA',
   });

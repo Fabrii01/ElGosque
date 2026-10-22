@@ -1,7 +1,5 @@
 // Construcción de solicitudes de pedido, compartida por el carrito y el asistente IA (REQ-F05)
 
-export const FRECUENCIAS_COMPRA = ['Única vez', 'Semanal', 'Quincenal', 'Mensual'];
-
 // El café verde solo se vende en grano
 export const presentacionesDisponibles = (producto) => (producto.tipo === 'Verde' ? ['En grano'] : ['En grano', 'Molido']);
 
@@ -26,7 +24,8 @@ export const crearItemSolicitud = (producto, cantidad, presentacion, peso) => {
 
 export const calcularTotalItems = (items) => items.reduce((sum, item) => sum + item.subtotal, 0);
 
-// Documento final de la solicitud; los datos del cliente salen de su perfil (REQ-F02-01)
+// Documento final de la solicitud; los datos del cliente salen de su perfil (REQ-F02-01).
+// La frecuencia de compra ya no se pide (un cliente nuevo no la conoce); los pedidos antiguos la conservan.
 export const crearSolicitud = ({ codigo, userData, contacto, productos, origen }) => ({
   codigo,
   clienteId: userData.uid,
@@ -35,7 +34,6 @@ export const crearSolicitud = ({ codigo, userData, contacto, productos, origen }
   telefono: contacto.telefono,
   ciudad: contacto.ciudad,
   negocio: contacto.negocio,
-  frecuencia: contacto.frecuencia,
   productos,
   total: calcularTotalItems(productos),
   estado: 'Pendiente',

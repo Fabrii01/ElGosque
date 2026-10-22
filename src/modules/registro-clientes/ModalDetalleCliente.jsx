@@ -59,10 +59,9 @@ const ModalDetalleCliente = ({ cliente, detalle, onCerrar, onAbrirPedido }) => {
               <Cifra etiqueta="Unidades" valor={formatearEntero(resumen.unidades)} />
               <Cifra etiqueta="Por cobrar" valor={formatearSoles(resumen.porCobrar)} ayuda="Ventas en estado Vendido que aún no registran pago" />
             </div>
-            <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <dl className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
               <Dato etiqueta="Primera compra" valor={resumen.primeraCompra && formatearFechaCorta(resumen.primeraCompra)} />
               <Dato etiqueta="Última compra" valor={resumen.ultimaCompra && formatearFechaCorta(resumen.ultimaCompra)} />
-              <Dato etiqueta="Frecuencia declarada" valor={resumen.frecuenciaDeclarada} />
               <Dato etiqueta="Pendientes / no concretados" valor={`${resumen.pendientes} / ${resumen.noConcretados}`} />
             </dl>
           </section>
