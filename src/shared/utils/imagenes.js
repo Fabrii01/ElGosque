@@ -27,7 +27,7 @@ export const comprimirImagen = async (archivo, { maxLado = 1000, calidad = 0.75 
 // Comprime con calidades decrecientes hasta que el data URL quepa en maxCaracteres
 // (Firestore admite 1 MB por documento y el base64 ocupa ~33 % más que la imagen)
 export const comprimirImagenHasta = async (archivo, maxCaracteres) => {
-  for (const [maxLado, calidad] of [[1600, 0.78], [1400, 0.7], [1200, 0.62], [1000, 0.55], [800, 0.5]]) {
+  for (const [maxLado, calidad] of [[1600, 0.78], [1400, 0.7], [1200, 0.62], [1000, 0.55], [800, 0.5], [640, 0.5], [480, 0.45]]) {
     const imagen = await comprimirImagen(archivo, { maxLado, calidad });
     if (imagen.length <= maxCaracteres) return imagen;
   }

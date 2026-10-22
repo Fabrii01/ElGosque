@@ -214,7 +214,7 @@ export const calcularCanales = (pedidos) => {
 export const calcularIndicadores = (pedidos, clientes) => {
   const ventas = pedidos.filter(esVenta);
   const conRespaldo = ventas.filter(p =>
-    tienePagoRegistrado(p.datosPago) && (p.datosPago.constancia || p.datosPago.nroOperacion) && tieneDatosEnvio(p.datosEnvio)
+    tienePagoRegistrado(p.datosPago) && (p.datosPago.constancia || p.datosPago.constanciaImagen || p.datosPago.nroOperacion) && tieneDatosEnvio(p.datosEnvio)
   );
   const pedidosIntegros = pedidos.filter(p =>
     p.telefono && p.ciudad && p.negocio && p.productos?.length > 0 && p.productos.every(i => Number(i.cantidad) > 0)

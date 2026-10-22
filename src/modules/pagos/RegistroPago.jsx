@@ -1,6 +1,6 @@
 import { METODOS_PAGO } from './pago';
 
-// Medio, monto, fecha y nro. de operación (REQ-F09-01/02); children = campos adicionales (constancia)
+// Medio, monto y fecha de pago (REQ-F09-01/02); children = captura del comprobante (constancia)
 const RegistroPago = ({ pago, setPago, children }) => {
   const actualizar = (campo, valor) => setPago({ ...pago, [campo]: valor });
 
@@ -22,10 +22,6 @@ const RegistroPago = ({ pago, setPago, children }) => {
         <div>
           <label className="block text-xs font-bold text-cafe-tostado uppercase mb-1">Fecha de Pago</label>
           <input type="date" className="w-full bg-cafe-leche border border-cafe-espresso/25 p-2 rounded-lg outline-none" value={pago.fecha} onChange={e => actualizar('fecha', e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-cafe-tostado uppercase mb-1">Nro. de Operación</label>
-          <input type="text" className="w-full bg-cafe-leche border border-cafe-espresso/25 p-2 rounded-lg outline-none" value={pago.nroOperacion} onChange={e => actualizar('nroOperacion', e.target.value)} placeholder="Ej. 984523" />
         </div>
         {children}
       </div>

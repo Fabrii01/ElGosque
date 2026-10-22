@@ -217,7 +217,7 @@ const DashboardBI = ({
               <MedidorIndicador
                 titulo="Pedidos con pago y envío registrados"
                 indicador={tablero.indicadores.respaldoPedidos}
-                definicion="Ventas concretadas con medio, monto, fecha y comprobante (constancia o nro. de operación) de pago, y datos de envío."
+                definicion="Ventas concretadas con medio, monto, fecha y comprobante de pago (captura; en pedidos anteriores, constancia o nro. de operación), y datos de envío."
               />
               <MedidorIndicador
                 titulo="Integridad de datos de clientes"

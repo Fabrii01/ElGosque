@@ -20,7 +20,13 @@ const ModalGestionPedido = ({ pedido, adminUser, onCerrar, onGuardado }) => {
   const [nuevoEstado, setNuevoEstado] = useState(estadoActual);
   const [motivoCancelacion, setMotivoCancelacion] = useState('');
   const [pago, setPago] = useState(() => crearPagoInicial(pedido.datosPago));
-  const [constancia, setConstancia] = useState(pedido.datosPago?.constancia || '');
+  const [constanciaImagen, setConstanciaImagen] = useState(pedido.datosPago?.constanciaImagen || '');
+  // Pedidos anteriores al cambio: nro. de operación y referencia se conservan y se muestran como información
+  const constancia = pedido.datosPago?.constancia || '';
+  const datosAnteriores = [
+    pago.nroOperacion && `Nro. de operación ${pago.nroOperacion}`,
+    constancia && `Referencia: ${constancia}`,
+  ].filter(Boolean);
   const [envio, setEnvio] = useState(() => crearEnvioInicial(pedido.datosEnvio));
   const [guardando, setGuardando] = useState(false);
 
@@ -29,7 +35,7 @@ const ModalGestionPedido = ({ pedido, adminUser, onCerrar, onGuardado }) => {
     const error = validarTransicion(estadoActual, nuevoEstado)
       || validarMotivo(nuevoEstado, motivoCancelacion)
       || (preciosEditables && validarProductosAcordados(nuevoEstado, productos))
-      || validarPago(nuevoEstado, pago)
+      || validarPago(nuevoEstado, { ...pago, constanciaImagen })
       || validarEnvio(nuevoEstado, envio)
       || validarEntrega(nuevoEstado, envio);
     if (error) return alert(error);
@@ -42,7 +48,7 @@ const ModalGestionPedido = ({ pedido, adminUser, onCerrar, onGuardado }) => {
         ...(preciosEditables && { productos: recalcularProductos(productos), total: calcularTotalAcordado(productos) }),
         estado: nuevoEstado,
         historial: historialAcumulado,
-        datosPago: { ...pago, constancia },
+        datosPago: { ...pago, constancia, constanciaImagen },
         datosEnvio: envio,
       });
       onGuardado();
@@ -69,7 +75,7 @@ const ModalGestionPedido = ({ pedido, adminUser, onCerrar, onGuardado }) => {
             <ProductosAcordados productos={productos} setProductos={setProductos} editable={preciosEditables} />
 
             <RegistroPago pago={pago} setPago={setPago}>
-              <RegistroConstancia constancia={constancia} setConstancia={setConstancia} />
+              <RegistroConstancia metodo={pago.metodo} imagen={constanciaImagen} setImagen={setConstanciaImagen} datosAnteriores={datosAnteriores} />
             </RegistroPago>
 
             <RegistroEnvio envio={envio} setEnvio={setEnvio} />

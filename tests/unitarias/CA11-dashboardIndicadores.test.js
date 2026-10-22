@@ -46,3 +46,12 @@ describe('CA11 - Dashboard: indicadores de integridad y respaldo (estadisticas.j
     expect(integridadPedidos.base).toBe(3);
   });
 });
+
+// Ampliación posterior al plan: la captura del comprobante cuenta como respaldo del pago
+describe('Ampliación CA11 - Captura como comprobante', () => {
+  it('[+] Venta pagada con captura (sin constancia ni nro. de operación) y con envío', () => {
+    const conCaptura = { metodo: 'Yape', monto: '480', fecha: '2026-10-20', nroOperacion: '', constancia: '', constanciaImagen: 'data:image/jpeg;base64,/9j/4AAQ' };
+    const { respaldoPedidos } = calcularIndicadores([pedido({ estado: 'Pagado', datosPago: conCaptura, datosEnvio })], []);
+    expect(respaldoPedidos.valor).toBe(1);
+  });
+});

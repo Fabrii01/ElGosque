@@ -30,11 +30,12 @@ Metas (**objetivos a evaluar, NO resultados alcanzados**; nunca afirmes que se c
 
 - **React 19** + **Vite 8** (`@vitejs/plugin-react`), JavaScript/JSX (sin TypeScript).
 - **React Router 7** (`BrowserRouter`). `PanelAdmin` se carga con `React.lazy` (chunk aparte con Recharts).
-- **Firebase 12**: Authentication (email/contraseña) y Cloud Firestore. `storage` se exporta pero **no se usa**: las imágenes se guardan en base64 en Firestore, comprimidas en el navegador con `shared/utils/imagenes.js` (`comprimirImagen`).
+- **Firebase 12**: Authentication (email/contraseña) y Cloud Firestore. Storage **no se usa** (requiere plan Blaze; `storage.rules` queda versionado por si se activa). Las imágenes se guardan en base64 en Firestore, comprimidas en el navegador con `shared/utils/imagenes.js` (`comprimirImagen`), incluida la captura del comprobante de pago.
 - **Recharts 3** para los gráficos del dashboard (paleta validada con el validador de dataviz: verde `#166534` + ámbar `#d97706`, ΔE daltonismo 14.7). Las barras usan `isAnimationActive={false}`.
 - **Identidad del portal público** (inicio, trazabilidad; ver `tailwind.config.js`): colores `cafe-espresso #2a1d17`, `cafe-tostado #5b3a29`, `cafe-kraft #c9a27e`, `cafe-crema #f5efe4`, `cafe-leche #fbf8f2`, `cafe-cereza #a8432a` (acento), `cafe-selva #1e3a2b`, `cafe-hoja #3e6b35`, `cafe-mostaza #d9a441` (acento sobre oscuro), `cafe-arena #ead9bf` (cereza sobre arena solo en texto grande); fuentes `font-titulo` (Fraunces) y `font-cuerpo` (Work Sans), autoalojadas con `@fontsource-variable` (importadas en `main.jsx`). Estilo editorial: secciones numeradas (`EtiquetaSeccion`); **todo texto va dentro de tarjetas** (`bg-cafe-leche rounded-md shadow` con borde de color `border-t-8`/`border-l-8` verde o mostaza, o tarjetas verde selva/marrón); verde y marrón son los colores protagonistas; sin emojis; textura `.papel`. En grids, los hijos que contienen carruseles o barras desplazables necesitan `min-w-0` (si no, desbordan en celular). Contrastes verificados ≥ 5.2:1. **La identidad se aplica a toda la app** (portal, login, carrito, Mis pedidos, cafetería, asistente IA y panel admin): `body` usa `font-cuerpo`/`text-cafe-espresso`/`bg-cafe-crema`; no usar grises, verdes ni ámbar genéricos de Tailwind salvo en colores semánticos (rojo de error/eliminar y colores por estado de `colorEstado`); sin emojis decorativos. Gráficos: verde `#2f6b2f` + mostaza `#d9a441` (validados).
 - **Tailwind CSS 3.4** vía PostCSS, colores `gosque-green`, `gosque-brown`, `gosque-light`. Utilidad propia `.scrollbar-hide` en `index.css`. `@tailwindcss/vite` (v4) está instalado pero no se usa.
 - **IA: Google Gemini** (`@google/generative-ai`, modelo `"gemini-3.8-flash"`, confirmado), llamado desde el navegador con `systemInstruction`. La clave se pega localmente en `src/modules/asistente-ia/AsistenteIA.jsx`; en el repo queda `GEMINI_API_KEY = ""`.
+- **Cloudinary** (plan gratuito, sin tarjeta): videos de la cafetería subidos por arrastre desde el panel (`subirVideoCafeteria` en `cafeteriaService.js`, cloud `ukht0909`, preset unsigned `gosque_videos` → carpeta `cafeteria/videos`). Nunca poner el API Key/Secret en el front.
 - **WhatsApp**: enlace `wa.me` con mensaje preformateado (REQ-F06).
 - **Base de datos: Firestore** (decisión confirmada; el documento de requerimientos aún dice MySQL).
 
@@ -46,9 +47,10 @@ npm run dev        # servidor de desarrollo (Vite)
 npm run build      # build de producción -> dist/
 npm run lint       # ESLint
 npm run preview    # sirve el build
+npm run test       # pruebas unitarias (Vitest, tests/unitarias)
 ```
 
-- **No hay pruebas automatizadas** en el repo ni script `test`. La lógica pura (estadísticas, validaciones, solicitudes) se ha verificado con scripts de Node fuera del repo.
+- Pruebas unitarias con **Vitest** en `tests/unitarias/CAxx-*.test.js`: un archivo por caso del Plan de Pruebas Unitarias (CA01–CA18); cada `it` lleva el número de fila del plan. Bloques `Corrección …`/`Ampliación …` = pruebas fuera del plan. Firebase, `localStorage` y `window` se simulan con `vi.mock`/`vi.stubGlobal`.
 - Estado verificado el 2026-10-15: `lint` sin errores; `build` OK (chunk principal ~897 kB, `PanelAdmin` ~444 kB). ESLint usa `react-hooks` v7: evitar `setState` síncrono en efectos (usar `servicio().then(setX)` o una función async dentro del efecto).
 - Windows no distingue mayúsculas: no crear `x.js` y `X.jsx` con el mismo nombre en una carpeta (el import se confunde).
 - Reglas versionadas en **`firestore.rules`**; se publican copiándolas en Firebase Console > Firestore > Reglas (no hay Firebase CLI). Resumen: `usuarios` dueño/admin, registro solo como `cliente` con `aceptaPrivacidad == true` y `fechaRegistro == request.time`; `productos` y `cafeteria` lectura pública solo si `activo == true` (por eso las consultas públicas usan `where('activo','==',true)`), escritura admin; `productos` además permite borrar al admin; `ajustes` lectura pública, escritura admin; `pedidos` el cliente lee los suyos y crea solicitudes propias en `Pendiente` con campos de `hasOnly`; actualizar solo admin; nada se borra. Cualquier campo nuevo en un documento creado por clientes debe agregarse a `hasOnly`.
@@ -98,15 +100,15 @@ Pestañas del admin: Dashboard BI, Gestión de Pedidos, Clientes, Catálogo, Tra
 
 - `usuarios/{uid}`: `nombre, negocio, ciudad, telefono, email, rol ('cliente'|'admin'), aceptaPrivacidad, fechaRegistro` (los dos últimos solo en registros nuevos). Admin se asigna manualmente.
 - `productos/{id}`: `nombre` (variedad), `descripcion, tipo ('Tostado'|'Verde'), presentacion ('En grano'|'Molido'), peso (texto, fijo: el precio corresponde a ese peso), precioReferencial (string), imagenUrl (base64), activo`.
-- `pedidos/{id}` — solicitudes y pedidos comparten colección (`Pendiente` = solicitud): `codigo, clienteId, clienteNombre, clienteEmail, telefono, ciudad, negocio, frecuencia, productos[{nombre, cantidad, peso, presentacion, precioUnitario (número), subtotal}], total, estado, origen?, fecha, historial[{estadoAnterior, estadoNuevo, fechaCambio, responsable, responsableId, motivo}], datosPago{metodo, monto, fecha, nroOperacion, constancia}, datosEnvio{modalidad, agencia, numeroGuia, fechaEnvio}, fechaActualizacion`.
+- `pedidos/{id}` — solicitudes y pedidos comparten colección (`Pendiente` = solicitud): `codigo, clienteId, clienteNombre, clienteEmail, telefono, ciudad, negocio, frecuencia? (solo pedidos antiguos), productos[{nombre, cantidad, peso, presentacion, precioUnitario (número), subtotal}], total, estado, origen?, fecha, historial[{estadoAnterior, estadoNuevo, fechaCambio, responsable, responsableId, motivo}], datosPago{metodo, monto, fecha, nroOperacion, constancia, constanciaImagen (base64)}, datosEnvio{modalidad, agencia, numeroGuia, fechaEnvio}, fechaActualizacion`.
 - `cafeteria/{id}`: `nombre, categoria, descripcion, precio (número), imagenUrl, activo`.
-- `ajustes/institucional`: `titulo, descripcion`. `ajustes/trazabilidad`: `region, etapas[{nombre, descripcion, img (URL)}]`. `ajustes/cafeteria`: `fotos[]` (base64, máx. 6, total < 950 000 caracteres; la primera es la portada). `ajustes/cafeteriaVideos`: `videos[{id, titulo, descripcion, url}]`. `ajustes/cafeteriaUbicacion`: `direccion, referencia, mapaEmbed (src validado), enlaceMaps, videoUrl`. Los videos son **enlaces** (YouTube, Shorts o archivo https .mp4/.webm/Firebase Storage); no se guardan en Firestore.
+- `ajustes/institucional`: `titulo, descripcion`. `ajustes/trazabilidad`: `region, etapas[{nombre, descripcion, img}]` (img = base64 arrastrado en el panel, ≤ 105 000 caracteres c/u porque las 9 comparten el documento; datos antiguos pueden tener URL). `ajustes/cafeteria`: `fotos[]` (base64, máx. 6, total < 950 000 caracteres; la primera es la portada). `ajustes/cafeteriaVideos`: `videos[{id, titulo, descripcion, url, miniatura}]`. `ajustes/cafeteriaUbicacion`: `direccion, referencia, mapaEmbed (src validado), enlaceMaps, videoUrl, videoMiniatura`. Los videos se guardan como **enlaces**: archivo subido a Cloudinary desde el panel (.mp4/.webm, máx. 100 MB; se reproduce con `<video>` nativo). Miniatura: propia opcional (base64 ≤ 60 000 caracteres) o automática (`miniaturaAutomatica`: YouTube o fotograma `so_1` de Cloudinary). Los videos se pueden editar desde el panel. o YouTube/Shorts.
 
 ## 7. Flujos de negocio
 
 1. **Registro/login**: Auth + doc `usuarios` con `rol: 'cliente'` y consentimiento obligatorio (checkbox + `AvisoPrivacidad`).
-2. **Solicitud desde catálogo**: botón "Solicitar cotización" → configurador (presentación según tipo; peso fijo del producto; cantidad) → carrito en `localStorage` por uid, **sincronizado con el catálogo vigente** (precio/peso actuales; quita productos desactivados y avisa) → contacto (precargado del perfil) y frecuencia → `crearSolicitud()` → "Continuar por WhatsApp" con total **referencial**.
-3. **Solicitud desde IA**: solo con sesión. Prompt de sistema con perfil, catálogo, trazabilidad y cafetería; prohíbe temas ajenos; pide confirmación antes de emitir `<<<SOLICITUD:{"productos":[{productoId,cantidad,presentacion}],"frecuencia"}>>>`. `solicitudIA.js` valida contra el catálogo y usa `crearSolicitud()` (precio del catálogo, peso del producto).
+2. **Solicitud desde catálogo**: botón "Solicitar cotización" → configurador (presentación según tipo; peso fijo del producto; cantidad) → carrito en `localStorage` por uid, **sincronizado con el catálogo vigente** (precio/peso actuales; quita productos desactivados y avisa) → contacto (precargado del perfil; ya no se pide frecuencia de compra) → `crearSolicitud()` → "Continuar por WhatsApp" con total **referencial**.
+3. **Solicitud desde IA**: solo con sesión. Prompt de sistema con perfil, catálogo, trazabilidad y cafetería; prohíbe temas ajenos; al iniciar un pedido ofrece solo Especial El Gosque, Gourmet, Geisha y Oro Negro (`VARIEDADES_PARA_PEDIDO`, las que estén en el catálogo); antes de confirmar muestra subtotales y el **total**; no dice que el precio es referencial ni pide frecuencia; tras la confirmación emite `<<<SOLICITUD:{"productos":[{productoId,cantidad,presentacion}]}>>>`. `solicitudIA.js` valida contra el catálogo y usa `crearSolicitud()` (precio del catálogo, peso del producto).
 4. **Gestión admin** (`ModalGestionPedido`): validaciones en orden: transición → motivo → productos/precios acordados (editables solo en Pendiente/Vendido; no se confirma "Vendido" con total 0) → pago → envío → entrega. Total = suma de subtotales acordados.
 5. **Consulta del cliente**: "Solicitudes en revisión" separadas de "Pedidos"; muestra motivo si fue Denegado/Cancelado.
 6. **Dashboard BI**: periodos (todo, 30/90 días, año, mes, rango libre) con comparación contra el periodo anterior; KPIs (ingresos, ventas, ticket, unidades, clientes, conversión); ingresos por mes (cronológico, meses vacíos en 0); solicitudes por estado; variedades solicitadas vs. vendidas; grano vs. molido; canal web vs. IA; ventas por ciudad y por modalidad (S/, >8 categorías → "Otros"); top 10 clientes (por `clienteId`); tabla cliente × producto; indicadores de tesis con meta; exportación CSV (pedidos y cliente×producto). Cada gráfico tiene "Ver datos en tabla".
@@ -115,10 +117,10 @@ Pestañas del admin: Dashboard BI, Gestión de Pedidos, Clientes, Catálogo, Tra
 
 ### Reglas de negocio implementadas
 - **Estados**: Pendiente → Vendido | Denegado | Cancelado; Vendido → Pagado | Cancelado; Pagado → Enviado | Cancelado; Enviado → Entregado; finales: Entregado, Denegado, Cancelado. Sin pago contra entrega (confirmado).
-- **Pagado**: medio, monto y fecha obligatorios; nro. de operación obligatorio en Yape, Plin y Transferencia (no en Efectivo ni Otro).
+- **Pagado**: medio, monto (> 0) y fecha obligatorios; **captura del comprobante** obligatoria en Yape, Plin y Transferencia (no en Efectivo ni Otro). El nro. de operación y la referencia ya no se piden; los de pedidos antiguos se conservan y se muestran como información.
 - **Enviado**: modalidad y fecha de despacho obligatorias. **Entregado**: solo desde Enviado.
 - **Códigos**: `REQ-AAAAMMDD-XXXXXX` / `IA-REQ-…` (6 caracteres aleatorios criptográficos; colisión muy improbable, no imposible).
-- **Indicadores** (`dashboard/estadisticas.js`, definiciones operativas propuestas, a validar con la tesis): respaldo de pedidos = ventas con pago registrado + comprobante (constancia o nro. operación) + datos de envío; integridad de clientes = 5 campos completos; integridad de solicitudes = teléfono, ciudad, negocio y cantidades válidas. Meta 90 %.
+- **Indicadores** (`dashboard/estadisticas.js`, definiciones operativas propuestas, a validar con la tesis): respaldo de pedidos = ventas con pago registrado + comprobante (captura; en pedidos antiguos constancia o nro. operación) + datos de envío; integridad de clientes = 5 campos completos; integridad de solicitudes = teléfono, ciudad, negocio y cantidades válidas. Meta 90 %.
 
 ## 8. Estado de funcionalidades
 
@@ -128,11 +130,11 @@ Pestañas del admin: Dashboard BI, Gestión de Pedidos, Clientes, Catálogo, Tra
 - **IA**: la clave de Gemini va en el bundle del front (decisión del usuario). La meta "IA estructura 80 % de solicitudes iniciales" no se puede medir: las conversaciones no se registran.
 - Reglas: hay que **republicar `firestore.rules`** tras cada cambio (última versión: colección `cafeteria` y consentimiento en registro). No validan transiciones de estado.
 - Historial: `fechaCambio` es la hora del navegador del admin (serverTimestamp no se permite en arrays).
-- Constancia de pago = texto/URL; no se suben archivos (REQ-F09-03 cumplido como "referenciar").
-- REQ-F04-02: no hay contenido audiovisual por variedad (solo imagen por etapa vía URL). REQ-F01-01: contenido institucional solo título y descripción.
+- Constancia de pago: solo captura arrastrada al panel (base64 en `pedidos/{id}.datosPago.constanciaImagen`, ≤ 400 000 caracteres).
+- Borrar un video del panel no borra su archivo en Cloudinary (se borra a mano en Media Library; borrar desde el front exigiría el API Secret).
+- REQ-F04-02: no hay contenido audiovisual por variedad (solo imagen por etapa). REQ-F01-01: contenido institucional solo título y descripción.
 - Sin datos propios de entrega (fecha de entrega, receptor). Sin medición del tiempo para armar una solicitud (meta < 2 min).
 - Aviso de privacidad redactado a partir de RN-15: **pendiente de validación por El Gosque** (Ley 29733).
-- Pruebas automatizadas en el repo.
 
 **Contenido provisional (no presentar como real):**
 - "Beneficios de salud" en `trazabilidad/BeneficiosSalud.jsx`: afirmaciones fijas sin fuente (RN-11).
