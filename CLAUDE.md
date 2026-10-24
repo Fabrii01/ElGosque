@@ -19,7 +19,7 @@ Metas (**objetivos a evaluar, NO resultados alcanzados**; nunca afirmes que se c
 
 | Meta | Dato que habría que registrar para medirla |
 |---|---|
-| 9 variedades y su trazabilidad gestionadas | Docs en `productos` por variedad + etapas en `ajustes/trazabilidad` |
+| 9 variedades y su trazabilidad gestionadas (desde el 2026-10-23 El Gosque comercializa solo 4: Especial El Gosque, Gourmet, Geisha y Oro Negro; la meta debe ajustarse en la tesis) | Docs en `productos` por variedad + etapas en `ajustes/trazabilidad` |
 | Resumen de Solicitud de Pedido en < 2 min | Hoy **no se registra** tiempo de inicio/fin del flujo |
 | 90 % integridad de datos de clientes y cantidades | Medidores en el dashboard (clientes y solicitudes) |
 | 90 % de pedidos confirmados con comprobante y estado de envío | Medidor en el dashboard (`calcularIndicadores`) |
@@ -48,12 +48,15 @@ npm run build      # build de producción -> dist/
 npm run lint       # ESLint
 npm run preview    # sirve el build
 npm run test       # pruebas unitarias (Vitest, tests/unitarias)
+npm run desplegar  # lint + pruebas + build + firebase deploy --only hosting
 ```
+
+- **Despliegue**: Firebase Hosting del proyecto `el-gosque-app` (`firebase.json`: carpeta `dist`, rewrite SPA a `index.html`, caché de `/assets`; `.firebaserc`). Requiere el CLI instalado globalmente (`npm install -g firebase-tools` + `firebase login`). URL: `https://el-gosque-app.web.app`.
 
 - Pruebas unitarias con **Vitest** en `tests/unitarias/CAxx-*.test.js`: un archivo por caso del Plan de Pruebas Unitarias (CA01–CA18); cada `it` lleva el número de fila del plan. Bloques `Corrección …`/`Ampliación …` = pruebas fuera del plan. Firebase, `localStorage` y `window` se simulan con `vi.mock`/`vi.stubGlobal`.
 - Estado verificado el 2026-10-15: `lint` sin errores; `build` OK (chunk principal ~897 kB, `PanelAdmin` ~444 kB). ESLint usa `react-hooks` v7: evitar `setState` síncrono en efectos (usar `servicio().then(setX)` o una función async dentro del efecto).
 - Windows no distingue mayúsculas: no crear `x.js` y `X.jsx` con el mismo nombre en una carpeta (el import se confunde).
-- Reglas versionadas en **`firestore.rules`**; se publican copiándolas en Firebase Console > Firestore > Reglas (no hay Firebase CLI). Resumen: `usuarios` dueño/admin, registro solo como `cliente` con `aceptaPrivacidad == true` y `fechaRegistro == request.time`; `productos` y `cafeteria` lectura pública solo si `activo == true` (por eso las consultas públicas usan `where('activo','==',true)`), escritura admin; `productos` además permite borrar al admin; `ajustes` lectura pública, escritura admin; `pedidos` el cliente lee los suyos y crea solicitudes propias en `Pendiente` con campos de `hasOnly`; actualizar solo admin; nada se borra. Cualquier campo nuevo en un documento creado por clientes debe agregarse a `hasOnly`.
+- Reglas versionadas en **`firestore.rules`**; se publican con `firebase deploy --only firestore:rules` o copiándolas en Firebase Console > Firestore > Reglas. Resumen: `usuarios` dueño/admin, registro solo como `cliente` con `aceptaPrivacidad == true` y `fechaRegistro == request.time`; `productos` y `cafeteria` lectura pública solo si `activo == true` (por eso las consultas públicas usan `where('activo','==',true)`), escritura admin; `productos` además permite borrar al admin; `ajustes` lectura pública, escritura admin; `pedidos` el cliente lee los suyos y crea solicitudes propias en `Pendiente` con campos de `hasOnly`; actualizar solo admin; nada se borra. Cualquier campo nuevo en un documento creado por clientes debe agregarse a `hasOnly`.
 
 ## 5. Estructura real
 
@@ -107,18 +110,19 @@ Pestañas del admin: Dashboard BI, Gestión de Pedidos, Clientes, Catálogo, Tra
 ## 7. Flujos de negocio
 
 1. **Registro/login**: Auth + doc `usuarios` con `rol: 'cliente'` y consentimiento obligatorio (checkbox + `AvisoPrivacidad`).
-2. **Solicitud desde catálogo**: botón "Solicitar cotización" → configurador (presentación según tipo; peso fijo del producto; cantidad) → carrito en `localStorage` por uid, **sincronizado con el catálogo vigente** (precio/peso actuales; quita productos desactivados y avisa) → contacto (precargado del perfil; ya no se pide frecuencia de compra) → `crearSolicitud()` → "Continuar por WhatsApp" con total **referencial**.
+2. **Solicitud desde catálogo**: botón "Solicitar cotización" → configurador (presentación según tipo; peso fijo del producto; cantidad) → carrito en `localStorage` por uid, **sincronizado con el catálogo vigente** (precio/peso actuales; quita productos desactivados y avisa) → contacto (precargado del perfil; ya no se pide frecuencia de compra) → `crearSolicitud()` → "Continuar por WhatsApp" con el total. **El cliente nunca ve que el precio es "referencial"** (decisión del 2026-10-23: el precio es fijo); el campo interno sigue llamándose `precioReferencial`.
+   - **Trazabilidad**: textos base de las 9 etapas en `trazabilidad/etapas.js` (`descripcionPorDefecto`), redactados con los datos de `momentosOrigen.js`; se muestran si la etapa no tiene descripción en Firestore y el panel tiene el botón "Usar textos de El Gosque". Pendientes de validar por El Gosque (RN-11).
 3. **Solicitud desde IA**: solo con sesión. Prompt de sistema con perfil, catálogo, trazabilidad y cafetería; prohíbe temas ajenos; al iniciar un pedido ofrece solo Especial El Gosque, Gourmet, Geisha y Oro Negro (`VARIEDADES_PARA_PEDIDO`, las que estén en el catálogo); antes de confirmar muestra subtotales y el **total**; no dice que el precio es referencial ni pide frecuencia; tras la confirmación emite `<<<SOLICITUD:{"productos":[{productoId,cantidad,presentacion}]}>>>`. `solicitudIA.js` valida contra el catálogo y usa `crearSolicitud()` (precio del catálogo, peso del producto).
-4. **Gestión admin** (`ModalGestionPedido`): validaciones en orden: transición → motivo → productos/precios acordados (editables solo en Pendiente/Vendido; no se confirma "Vendido" con total 0) → pago → envío → entrega. Total = suma de subtotales acordados.
-5. **Consulta del cliente**: "Solicitudes en revisión" separadas de "Pedidos"; muestra motivo si fue Denegado/Cancelado.
+4. **Gestión admin** (`ModalGestionPedido`): validaciones en orden: transición → motivo → productos/precios acordados (editables solo en Pendiente; no se marca "Pagado" con total 0) → pago → envío → entrega (paso a Vendido). Total = suma de subtotales acordados.
+5. **Consulta del cliente**: "Solicitudes en revisión" separadas de "Pedidos"; muestra motivo si fue Cancelado.
 6. **Dashboard BI**: periodos (todo, 30/90 días, año, mes, rango libre) con comparación contra el periodo anterior; KPIs (ingresos, ventas, ticket, unidades, clientes, conversión); ingresos por mes (cronológico, meses vacíos en 0); solicitudes por estado; variedades solicitadas vs. vendidas; grano vs. molido; canal web vs. IA; ventas por ciudad y por modalidad (S/, >8 categorías → "Otros"); top 10 clientes (por `clienteId`); tabla cliente × producto; indicadores de tesis con meta; exportación CSV (pedidos y cliente×producto). Cada gráfico tiene "Ver datos en tabla".
 
 7. **Página de la cafetería**: secciones sin contenido (Preparación, Galería) se ocultan junto con su enlace del menú. Todo enlace de video/mapa pasa por `multimedia.js` (solo https y dominios permitidos: YouTube, Google Maps, Firebase/Google Storage o archivos de video) antes de usarse en `<iframe>`/`<video>`. Si no hay mapa insertado, se genera uno desde la dirección.
 
 ### Reglas de negocio implementadas
-- **Estados**: Pendiente → Vendido | Denegado | Cancelado; Vendido → Pagado | Cancelado; Pagado → Enviado | Cancelado; Enviado → Entregado; finales: Entregado, Denegado, Cancelado. Sin pago contra entrega (confirmado).
+- **Estados** (cambiados el 2026-10-23): Pendiente (solicitud) → Pagado (acuerdo por WhatsApp y pago) | Cancelado; Pagado → Enviado | Vendido (solo con modalidad "Recojo en Tienda") | Cancelado; Enviado → Vendido (el pedido llegó al cliente); finales: Vendido, Cancelado (motivo obligatorio). Ya no existen Denegado ni Entregado; los pedidos antiguos con esos estados eran de prueba. Venta concretada = Pagado, Enviado o Vendido. Sin pago contra entrega (confirmado).
 - **Pagado**: medio, monto (> 0) y fecha obligatorios; **captura del comprobante** obligatoria en Yape, Plin y Transferencia (no en Efectivo ni Otro). El nro. de operación y la referencia ya no se piden; los de pedidos antiguos se conservan y se muestran como información.
-- **Enviado**: modalidad y fecha de despacho obligatorias. **Entregado**: solo desde Enviado.
+- **Enviado**: modalidad y fecha de despacho obligatorias. **Vendido**: desde Enviado, o desde Pagado con "Recojo en Tienda" (`validarEntrega`).
 - **Códigos**: `REQ-AAAAMMDD-XXXXXX` / `IA-REQ-…` (6 caracteres aleatorios criptográficos; colisión muy improbable, no imposible).
 - **Indicadores** (`dashboard/estadisticas.js`, definiciones operativas propuestas, a validar con la tesis): respaldo de pedidos = ventas con pago registrado + comprobante (captura; en pedidos antiguos constancia o nro. operación) + datos de envío; integridad de clientes = 5 campos completos; integridad de solicitudes = teléfono, ciudad, negocio y cantidades válidas. Meta 90 %.
 

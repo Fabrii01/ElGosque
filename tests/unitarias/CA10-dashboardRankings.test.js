@@ -36,7 +36,7 @@ describe('CA10 - Dashboard: rankings y comparaciones (estadisticas.js)', () => {
     const ranking = calcularTopClientes([
       pedido({ clienteId: 'u1', total: 100 }),
       pedido({ clienteId: 'u7', estado: 'Pendiente', total: 500 }),
-      pedido({ clienteId: 'u8', estado: 'Denegado', total: 500 }),
+      pedido({ clienteId: 'u8', estado: 'Cancelado', total: 500 }),
     ]);
     expect(ranking.map(c => c.clienteId)).toEqual(['u1']);
   });

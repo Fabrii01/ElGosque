@@ -43,8 +43,8 @@ describe('CA06 - Cantidad y precio final acordado (preciosAcordados.js)', () => 
     expect(validarProductosAcordados('Vendido', [producto(2, '')])).toBe(ERROR_PRECIO);
   });
 
-  it('9.0 [–] Confirmar la venta con total cero', () => {
-    expect(validarProductosAcordados('Vendido', [producto(2, 0)])).toBe('Registra el precio acordado antes de confirmar la venta.');
+  it('9.0 [–] Marcar como Pagado con total cero', () => {
+    expect(validarProductosAcordados('Pagado', [producto(2, 0)])).toBe('Registra el precio acordado antes de marcar el pedido como Pagado.');
   });
 
   it('10.0 [+] Solicitud pendiente sin precio', () => {
@@ -58,7 +58,7 @@ describe('CA06 - Cantidad y precio final acordado (preciosAcordados.js)', () => 
   });
 
   it('12.0 [+] Estados con precio editable', () => {
-    expect(ESTADOS_CON_PRECIO_EDITABLE).toEqual(['Pendiente', 'Vendido']);
+    expect(ESTADOS_CON_PRECIO_EDITABLE).toEqual(['Pendiente']);
     expect(ESTADOS_CON_PRECIO_EDITABLE).not.toContain('Pagado');
   });
 });

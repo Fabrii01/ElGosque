@@ -10,7 +10,7 @@ import { variacion } from './estadisticas';
 import { formatearSoles, formatearSolesCorto, formatearEntero, formatearPorcentaje } from '../../shared/utils/formato';
 import GranoCafe from '../../shared/components/portal/GranoCafe';
 
-const ESTADOS_ATENUADOS = ['Denegado', 'Cancelado'];
+const ESTADOS_ATENUADOS = ['Cancelado'];
 const SinVentas = () => <p className="text-sm text-cafe-tostado/70 italic py-8 text-center">Sin ventas concretadas en este periodo.</p>;
 
 const DashboardBI = ({
@@ -29,7 +29,7 @@ const DashboardBI = ({
       <div className="bg-cafe-leche rounded-md shadow-sm border border-cafe-espresso/10 p-4 sm:p-5 md:p-6 flex flex-col lg:flex-row justify-between lg:items-end gap-4 min-w-0">
         <div>
           <h3 className="font-bold text-2xl text-cafe-espresso">Inteligencia Comercial</h3>
-          <p className="text-sm text-cafe-tostado/80">Ventas = pedidos en Vendido, Pagado, Enviado o Entregado, según la fecha de registro de la solicitud.</p>
+          <p className="text-sm text-cafe-tostado/80">Ventas = pedidos en Pagado, Enviado o Vendido, según la fecha de registro de la solicitud.</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <label className="text-xs font-bold text-cafe-tostado/80 uppercase tracking-wider">

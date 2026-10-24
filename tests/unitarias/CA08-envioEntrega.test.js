@@ -44,12 +44,14 @@ describe('CA08 - Envíos y entregas (envio.js y entrega.js)', () => {
     expect(crearEnvioInicial()).toEqual({ modalidad: '', agencia: '', numeroGuia: '', fechaEnvio: '' });
   });
 
-  it('10.0 [+] Entregar un pedido con datos de envío', () => {
-    expect(validarEntrega('Entregado', envio({ modalidad: 'Delivery Local' }))).toBeNull();
+  it('10.0 [+] Marcar como Vendido un pedido enviado', () => {
+    expect(validarEntrega('Vendido', envio({ modalidad: 'Delivery Local' }), 'Enviado')).toBeNull();
+    expect(validarEntrega('Vendido', envio({ modalidad: 'Recojo en Tienda', fechaEnvio: '' }), 'Pagado')).toBeNull();
   });
 
-  it('11.0 [–] Entregar un pedido sin datos de envío', () => {
-    expect(validarEntrega('Entregado', envio({ modalidad: '', fechaEnvio: '' }))).toBe('Faltan datos de envío.');
+  it('11.0 [–] Marcar como Vendido sin datos de envío o sin enviar', () => {
+    expect(validarEntrega('Vendido', envio({ modalidad: '', fechaEnvio: '' }), 'Enviado')).toBe('Faltan datos de envío.');
+    expect(validarEntrega('Vendido', envio({ modalidad: 'Delivery Local' }), 'Pagado')).toBe('Para marcar como Vendido sin pasar por Enviado, la modalidad debe ser «Recojo en Tienda».');
   });
 
   it('12.0 [+] Otros estados no validan la entrega', () => {

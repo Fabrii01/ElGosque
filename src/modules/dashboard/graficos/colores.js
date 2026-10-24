@@ -3,7 +3,7 @@
 // los gráficos que lo usan llevan leyenda, tooltip y vista de tabla.
 export const COLOR_PRINCIPAL = '#2f6b2f';   // verde hoja: serie principal / ventas
 export const COLOR_SECUNDARIO = '#d9a441';  // mostaza: segunda serie (solicitado)
-export const COLOR_ATENUADO = '#c9a27e';    // kraft: categorías de contexto (denegado/cancelado)
+export const COLOR_ATENUADO = '#c9a27e';    // kraft: categorías de contexto (cancelado)
 export const COLOR_GRILLA = '#ead9bf';
 export const COLOR_EJE = '#c9a27e';
 export const COLOR_TEXTO_EJE = '#5b3a29';

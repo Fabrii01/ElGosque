@@ -1,6 +1,6 @@
 import ZonaArrastrar from '../../shared/components/ZonaArrastrar';
 
-const AdminTrazabilidad = ({ regionProcedencia, setRegionProcedencia, etapasTrazabilidad, handleEtapaChange, guardarTrazabilidad, procesandoEtapa, subirImagenEtapa }) => (
+const AdminTrazabilidad = ({ regionProcedencia, setRegionProcedencia, etapasTrazabilidad, handleEtapaChange, guardarTrazabilidad, procesandoEtapa, subirImagenEtapa, usarTextosElGosque }) => (
   <div className="bg-cafe-leche rounded-md shadow-sm border border-cafe-espresso/10 p-8 max-w-4xl mx-auto">
     <h3 className="font-bold text-2xl text-cafe-espresso mb-6">Trazabilidad del Café</h3>
     <form onSubmit={guardarTrazabilidad} className="space-y-6">
@@ -8,11 +8,15 @@ const AdminTrazabilidad = ({ regionProcedencia, setRegionProcedencia, etapasTraz
         <label className="block text-xs font-bold text-cafe-tostado uppercase mb-2">Región de Procedencia</label>
         <input type="text" className="w-full bg-cafe-leche border border-cafe-kraft p-3 rounded-lg outline-none" value={regionProcedencia} onChange={(e) => setRegionProcedencia(e.target.value)} required />
       </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm text-cafe-tostado/80">Las etapas sin descripción muestran el texto base de El Gosque en la web pública.</p>
+        <button type="button" onClick={usarTextosElGosque} className="shrink-0 border border-cafe-hoja text-cafe-hoja font-bold text-sm py-2 px-4 rounded-sm hover:bg-cafe-hoja hover:text-white">Usar textos de El Gosque</button>
+      </div>
       <div className="space-y-4">
         {etapasTrazabilidad.map((etapa, index) => (
           <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-cafe-crema p-4 rounded-sm border border-cafe-espresso/15">
             <div className="md:col-span-3"><span className="font-bold text-cafe-hoja">{index + 1}. {etapa.nombre}</span></div>
-            <div className="md:col-span-5"><input type="text" placeholder="Descripción..." className="w-full text-sm border p-2 rounded outline-none" value={etapa.descripcion} onChange={(e) => handleEtapaChange(index, 'descripcion', e.target.value)} /></div>
+            <div className="md:col-span-5"><textarea rows={4} placeholder="Descripción..." className="w-full text-sm border p-2 rounded outline-none resize-y" value={etapa.descripcion} onChange={(e) => handleEtapaChange(index, 'descripcion', e.target.value)} /></div>
             <div className="md:col-span-4">
               {etapa.img ? (
                 <div className="flex items-center gap-3">

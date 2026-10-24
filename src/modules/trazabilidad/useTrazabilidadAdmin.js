@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { obtenerTrazabilidad, guardarTrazabilidad as guardarEnFirestore, ETAPAS_TRAZABILIDAD, REGION_POR_DEFECTO } from './trazabilidadService';
 import { comprimirImagenHasta } from '../../shared/utils/imagenes';
+import { descripcionPorDefecto } from './etapas';
 
 // Las imágenes de las 9 etapas comparten el documento ajustes/trazabilidad (1 MB): ~105 000 caracteres cada una
 const MAX_CARACTERES_IMAGEN_ETAPA = Math.floor(950000 / ETAPAS_TRAZABILIDAD.length);
@@ -8,7 +9,7 @@ const MAX_CARACTERES_IMAGEN_ETAPA = Math.floor(950000 / ETAPAS_TRAZABILIDAD.leng
 // Estado del formulario de trazabilidad del panel admin; carga cuando habilitado = true
 export const useTrazabilidadAdmin = (habilitado) => {
   const [regionProcedencia, setRegionProcedencia] = useState(REGION_POR_DEFECTO);
-  const [etapasTrazabilidad, setEtapasTrazabilidad] = useState(() => ETAPAS_TRAZABILIDAD.map(e => ({ nombre: e, descripcion: '', img: '' })));
+  const [etapasTrazabilidad, setEtapasTrazabilidad] = useState(() => ETAPAS_TRAZABILIDAD.map(e => ({ nombre: e, descripcion: descripcionPorDefecto(e), img: '' })));
 
   useEffect(() => {
     if (!habilitado) return;
@@ -16,11 +17,16 @@ export const useTrazabilidadAdmin = (habilitado) => {
       const data = await obtenerTrazabilidad();
       if (data) {
         setRegionProcedencia(data.region || REGION_POR_DEFECTO);
-        if (data.etapas) setEtapasTrazabilidad(data.etapas);
+        if (data.etapas) setEtapasTrazabilidad(data.etapas.map(e => ({ ...e, descripcion: e.descripcion || descripcionPorDefecto(e.nombre) })));
       }
     };
     cargarTrazabilidad();
   }, [habilitado]);
+
+  // Reemplaza las descripciones por los textos base de El Gosque (conserva las imágenes); se guarda al pulsar "Actualizar Trazabilidad"
+  const usarTextosElGosque = () => {
+    setEtapasTrazabilidad(actuales => actuales.map(e => ({ ...e, descripcion: descripcionPorDefecto(e.nombre) || e.descripcion })));
+  };
 
   // Índice de la etapa cuya imagen se está comprimiendo (o null)
   const [procesandoEtapa, setProcesandoEtapa] = useState(null);
@@ -52,5 +58,5 @@ export const useTrazabilidadAdmin = (habilitado) => {
     }
   };
 
-  return { regionProcedencia, setRegionProcedencia, etapasTrazabilidad, handleEtapaChange, guardarTrazabilidad, procesandoEtapa, subirImagenEtapa };
+  return { regionProcedencia, setRegionProcedencia, etapasTrazabilidad, handleEtapaChange, guardarTrazabilidad, procesandoEtapa, subirImagenEtapa, usarTextosElGosque };
 };

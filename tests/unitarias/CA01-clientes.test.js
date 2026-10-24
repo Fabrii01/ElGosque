@@ -49,7 +49,7 @@ describe('CA01 - Registro de clientes (clientes.js)', () => {
     const pedidos = [
       pedido('u1', 'Vendido', 100, 1760000000),
       pedido('u1', 'Pendiente', 50, 1760100000),
-      pedido('u1', 'Entregado', 200, 1760200000),
+      pedido('u1', 'Enviado', 200, 1760200000),
     ];
     const [resumen] = resumirClientes([cliente], pedidos);
     expect(resumen.solicitudes).toBe(3);

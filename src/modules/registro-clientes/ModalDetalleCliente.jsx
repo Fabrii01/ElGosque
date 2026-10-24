@@ -51,14 +51,12 @@ const ModalDetalleCliente = ({ cliente, detalle, onCerrar, onAbrirPedido }) => {
           {/* RESUMEN COMERCIAL */}
           <section>
             <h4 className="text-sm font-bold text-cafe-espresso uppercase mb-3">Resumen comercial</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <Cifra etiqueta="Solicitudes" valor={formatearEntero(resumen.solicitudes)} ayuda="Todas las solicitudes registradas, en cualquier estado" />
-              <Cifra etiqueta="Pedidos concretados" valor={formatearEntero(resumen.pedidosConcretados)} ayuda="Vendido, Pagado, Enviado o Entregado" />
+              <Cifra etiqueta="Pedidos concretados" valor={formatearEntero(resumen.pedidosConcretados)} ayuda="Pagado, Enviado o Vendido" />
               <Cifra etiqueta="Total comprado" valor={formatearSoles(resumen.totalComprado)} />
               <Cifra etiqueta="Ticket promedio" valor={formatearSoles(resumen.ticketPromedio)} />
-              <Cifra etiqueta="Unidades" valor={formatearEntero(resumen.unidades)} />
-              <Cifra etiqueta="Por cobrar" valor={formatearSoles(resumen.porCobrar)} ayuda="Ventas en estado Vendido que aún no registran pago" />
-            </div>
+              <Cifra etiqueta="Unidades" valor={formatearEntero(resumen.unidades)} />            </div>
             <dl className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
               <Dato etiqueta="Primera compra" valor={resumen.primeraCompra && formatearFechaCorta(resumen.primeraCompra)} />
               <Dato etiqueta="Última compra" valor={resumen.ultimaCompra && formatearFechaCorta(resumen.ultimaCompra)} />

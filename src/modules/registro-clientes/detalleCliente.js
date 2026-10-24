@@ -26,12 +26,10 @@ export const calcularDetalleCliente = (cliente, pedidos) => {
       solicitudes: propios.length,
       pendientes: propios.filter(p => p.estado === 'Pendiente').length,
       pedidosConcretados: ventas.length,
-      noConcretados: propios.filter(p => p.estado === 'Denegado' || p.estado === 'Cancelado').length,
+      noConcretados: propios.filter(p => p.estado === 'Cancelado').length,
       totalComprado,
       ticketPromedio: ventas.length ? totalComprado / ventas.length : 0,
       unidades: ventas.reduce((sum, p) => sum + unidadesDe(p), 0),
-      // Ventas confirmadas que aún no registran pago
-      porCobrar: ventas.filter(p => p.estado === 'Vendido').reduce((sum, p) => sum + (p.total || 0), 0),
       desdeIA: propios.filter(p => p.origen === 'Asistente IA').length,
       primeraCompra: fechasVenta.length ? { seconds: Math.min(...fechasVenta) } : null,
       ultimaCompra: fechasVenta.length ? { seconds: Math.max(...fechasVenta) } : null,

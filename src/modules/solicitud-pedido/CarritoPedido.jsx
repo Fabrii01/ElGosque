@@ -9,7 +9,7 @@ const CarritoPedido = ({
       <div className="p-6 flex justify-between items-center bg-cafe-selva text-cafe-crema border-b-4 border-cafe-mostaza">
         <div>
           <h2 className="text-2xl font-titulo font-semibold">Tu pedido</h2>
-          <p className="text-xs text-cafe-crema/80 mt-0.5">Solicitud de pedido · precios referenciales</p>
+          <p className="text-xs text-cafe-crema/80 mt-0.5">Solicitud de pedido</p>
         </div>
         <button onClick={cerrarCarrito} className="w-9 h-9 rounded-sm bg-cafe-crema/10 hover:bg-cafe-crema/25 text-xl" aria-label="Cerrar">×</button>
       </div>

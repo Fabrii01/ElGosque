@@ -8,7 +8,7 @@ const pedido = (estado, total, extra = {}) => ({ clienteId: 'u1', estado, total,
 describe('CA17 - Detalle comercial del cliente (detalleCliente.js)', () => {
   it('1.0 [+] Resumen del cliente', () => {
     const { resumen } = calcularDetalleCliente(cliente, [
-      pedido('Vendido', 100), pedido('Entregado', 300), pedido('Pendiente', 50), pedido('Cancelado', 80),
+      pedido('Vendido', 100), pedido('Enviado', 300), pedido('Pendiente', 50), pedido('Cancelado', 80),
     ]);
     expect(resumen).toMatchObject({
       solicitudes: 4, pendientes: 1, pedidosConcretados: 2, noConcretados: 1, totalComprado: 400, ticketPromedio: 200,
@@ -22,9 +22,9 @@ describe('CA17 - Detalle comercial del cliente (detalleCliente.js)', () => {
     expect(resumen.primeraCompra).toBeNull();
   });
 
-  it('3.0 [+] Monto por cobrar', () => {
-    const { resumen } = calcularDetalleCliente(cliente, [pedido('Vendido', 100), pedido('Pagado', 300)]);
-    expect(resumen.porCobrar).toBe(100);
+  it('3.0 [+] Solo cuentan como venta los pedidos con pago', () => {
+    const { resumen } = calcularDetalleCliente(cliente, [pedido('Pendiente', 100), pedido('Pagado', 300), pedido('Cancelado', 50)]);
+    expect(resumen).toMatchObject({ pedidosConcretados: 1, totalComprado: 300, noConcretados: 1 });
   });
 
   it('4.0 [+] Productos favoritos', () => {

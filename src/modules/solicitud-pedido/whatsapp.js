@@ -10,7 +10,7 @@ export const construirMensajeWhatsApp = (pedido) => {
 *Código de Pedido:* ${pedido.codigo}
 *Productos:*
 ${resumenProductos}
-*Total Referencial:* S/ ${pedido.total.toFixed(2)} (precio final sujeto a confirmación)
+*Total:* S/ ${pedido.total.toFixed(2)}
 *Ciudad de envío:* ${pedido.ciudad}
 *Negocio:* ${pedido.negocio}
 

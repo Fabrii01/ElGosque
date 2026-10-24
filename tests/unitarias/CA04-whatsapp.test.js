@@ -19,7 +19,7 @@ describe('CA04 - Mensaje de WhatsApp (whatsapp.js)', () => {
     const mensaje = construirMensajeWhatsApp(pedido);
     expect(mensaje).toContain('REQ-20261019-ABC234');
     expect(mensaje).toContain('- 2x Geisha (Molido, 250 g) = S/ 91');
-    expect(mensaje).toContain('*Total Referencial:* S/ 91.00');
+    expect(mensaje).toContain('*Total:* S/ 91.00');
     expect(mensaje).toContain('Trujillo');
     expect(mensaje).toContain('Café Aroma SAC');
   });

@@ -12,31 +12,30 @@ const pedidos = [
 
 describe('CA05 - Estados del pedido (estadoPedido.js)', () => {
   it('1.0 [+] Flujo completo de estados', () => {
-    expect(validarTransicion('Pendiente', 'Vendido')).toBeNull();
-    expect(validarTransicion('Vendido', 'Pagado')).toBeNull();
+    expect(validarTransicion('Pendiente', 'Pagado')).toBeNull();
     expect(validarTransicion('Pagado', 'Enviado')).toBeNull();
-    expect(validarTransicion('Enviado', 'Entregado')).toBeNull();
+    expect(validarTransicion('Enviado', 'Vendido')).toBeNull();
   });
 
   it('2.0 [+] Mantener el mismo estado', () => {
     expect(validarTransicion('Vendido', 'Vendido')).toBeNull();
   });
 
-  it('3.0 [–] Entregar un pedido que no fue enviado', () => {
-    expect(validarTransicion('Pagado', 'Entregado')).toBe('No se puede pasar de "Pagado" a "Entregado".');
+  it('3.0 [–] Marcar como vendida una solicitud sin pago', () => {
+    expect(validarTransicion('Pendiente', 'Vendido')).toBe('No se puede pasar de "Pendiente" a "Vendido".');
   });
 
   it('4.0 [–] Saltar el pago', () => {
-    expect(validarTransicion('Pendiente', 'Pagado')).toBe('No se puede pasar de "Pendiente" a "Pagado".');
+    expect(validarTransicion('Pendiente', 'Enviado')).toBe('No se puede pasar de "Pendiente" a "Enviado".');
   });
 
   it('5.0 [–] Cambiar un estado final', () => {
-    expect(validarTransicion('Entregado', 'Cancelado')).toBe('No se puede pasar de "Entregado" a "Cancelado".');
+    expect(validarTransicion('Vendido', 'Cancelado')).toBe('No se puede pasar de "Vendido" a "Cancelado".');
     expect(validarTransicion('Cancelado', 'Pendiente')).toBe('No se puede pasar de "Cancelado" a "Pendiente".');
   });
 
   it('6.0 [+] Estados disponibles desde «Enviado»', () => {
-    expect(estadosDisponibles('Enviado')).toEqual(['Enviado', 'Entregado']);
+    expect(estadosDisponibles('Enviado')).toEqual(['Enviado', 'Vendido']);
   });
 
   it('7.0 [–] Estado desconocido', () => {
@@ -47,8 +46,8 @@ describe('CA05 - Estados del pedido (estadoPedido.js)', () => {
     expect(validarMotivo('Cancelado', 'Cliente no confirmó el pago')).toBeNull();
   });
 
-  it('9.0 [–] Denegar sin motivo', () => {
-    expect(validarMotivo('Denegado', '')).toBe('Debes ingresar un motivo.');
+  it('9.0 [–] Cancelar sin motivo', () => {
+    expect(validarMotivo('Cancelado', '')).toBe('Debes ingresar un motivo.');
   });
 
   it('10.0 [–] Cancelar con motivo de solo espacios', () => {
@@ -60,10 +59,10 @@ describe('CA05 - Estados del pedido (estadoPedido.js)', () => {
   });
 
   it('12.0 [+] Entrada del historial', () => {
-    const entrada = crearEntradaHistorial({ estado: 'Pendiente' }, 'Vendido', { nombre: 'Luis Rojas', uid: 'a1' }, '');
+    const entrada = crearEntradaHistorial({ estado: 'Pendiente' }, 'Pagado', { nombre: 'Luis Rojas', uid: 'a1' }, '');
     expect(entrada).toMatchObject({
       estadoAnterior: 'Pendiente',
-      estadoNuevo: 'Vendido',
+      estadoNuevo: 'Pagado',
       responsable: 'Luis Rojas',
       responsableId: 'a1',
       motivo: 'Gestión operativa',
@@ -87,11 +86,11 @@ describe('CA05 - Estados del pedido (estadoPedido.js)', () => {
     const pedido = {
       estado: 'Cancelado',
       historial: [
-        { estadoAnterior: 'Pendiente', estadoNuevo: 'Vendido', motivo: 'Gestión operativa' },
-        { estadoAnterior: 'Vendido', estadoNuevo: 'Cancelado', motivo: 'Cliente no confirmó el pago' },
+        { estadoAnterior: 'Pendiente', estadoNuevo: 'Pagado', motivo: 'Gestión operativa' },
+        { estadoAnterior: 'Pagado', estadoNuevo: 'Cancelado', motivo: 'Cliente desistió del pedido' },
       ],
     };
-    expect(motivoDelEstado(pedido)).toBe('Cliente no confirmó el pago');
+    expect(motivoDelEstado(pedido)).toBe('Cliente desistió del pedido');
   });
 
   it('16.0 [–] Motivo de un pedido que no fue cancelado', () => {

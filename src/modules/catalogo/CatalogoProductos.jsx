@@ -30,7 +30,7 @@ const CatalogoProductos = ({ productos, cargando, onAgregar }) => (
           <h2 className="font-titulo font-light text-4xl md:text-5xl mt-5">Catálogo</h2>
         </div>
         <p className="lg:col-span-5 text-cafe-crema/90 leading-relaxed">
-          Café verde y tostado, en grano o molido. Los precios son referenciales: el precio final se acuerda según cantidad, presentación y destino.
+          Café verde y tostado, en grano o molido.
         </p>
       </Revelar>
 
@@ -49,7 +49,6 @@ const CatalogoProductos = ({ productos, cargando, onAgregar }) => (
                     <h3 className="font-titulo text-xl text-cafe-espresso leading-tight">{producto.nombre}</h3>
                     <p className="text-right shrink-0">
                       <span className="block font-titulo text-lg text-cafe-cereza tabular-nums">{formatearSoles(producto.precioReferencial)}</span>
-                      <span className="block text-[10px] uppercase tracking-[0.18em] text-cafe-tostado">Referencial</span>
                     </p>
                   </div>
                   <dl className="grid grid-cols-2 gap-y-1.5 text-sm mt-4">

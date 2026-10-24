@@ -61,7 +61,7 @@ const PaginaMisPedidos = () => {
           <div className="space-y-12">
             <section>
               <h2 className="font-titulo text-2xl text-cafe-crema bg-cafe-tostado rounded-sm px-4 py-2 mb-2">Solicitudes en revisión ({solicitudes.length})</h2>
-              <p className="text-sm text-cafe-tostado/80 mb-5">Solicitudes que el administrador aún no confirma. Los precios son referenciales.</p>
+              <p className="text-sm text-cafe-tostado/80 mb-5">Solicitudes que el administrador aún no confirma.</p>
               <div className="space-y-6">
                 {solicitudes.map(pedido => <TarjetaPedidoCliente key={pedido.id} pedido={pedido} />)}
                 {solicitudes.length === 0 && <p className="text-sm text-cafe-tostado/70 italic">No tienes solicitudes pendientes.</p>}

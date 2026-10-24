@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { obtenerTrazabilidad } from './trazabilidadService';
+import { descripcionPorDefecto } from './etapas';
 
 export const useTrazabilidadPublica = () => {
   const [region, setRegion] = useState('');
@@ -12,7 +13,8 @@ export const useTrazabilidadPublica = () => {
         const data = await obtenerTrazabilidad();
         if (data) {
           setRegion(data.region || 'No especificada');
-          setProcesos(data.etapas || []);
+          // Etapas sin descripción guardada muestran el texto base de El Gosque
+          setProcesos((data.etapas || []).map(e => ({ ...e, descripcion: e.descripcion || descripcionPorDefecto(e.nombre) })));
         }
       } catch (error) {
         console.error("Error al cargar trazabilidad", error);

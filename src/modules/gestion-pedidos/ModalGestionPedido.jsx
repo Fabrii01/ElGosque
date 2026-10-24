@@ -37,7 +37,7 @@ const ModalGestionPedido = ({ pedido, adminUser, onCerrar, onGuardado }) => {
       || (preciosEditables && validarProductosAcordados(nuevoEstado, productos))
       || validarPago(nuevoEstado, { ...pago, constanciaImagen })
       || validarEnvio(nuevoEstado, envio)
-      || validarEntrega(nuevoEstado, envio);
+      || validarEntrega(nuevoEstado, envio, estadoActual);
     if (error) return alert(error);
 
     const nuevoHistorial = crearEntradaHistorial(pedido, nuevoEstado, adminUser, motivoCancelacion);

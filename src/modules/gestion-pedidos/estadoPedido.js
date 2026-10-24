@@ -1,15 +1,13 @@
 // Reglas y utilidades del estado del pedido (REQ-F08)
 
-// Flujo permitido: Pendiente → Vendido → Pagado → Enviado → Entregado.
-// Denegado solo desde una solicitud; Cancelado antes del despacho. Los estados finales no cambian.
-// REQ-F10-05: "Entregado" solo es alcanzable desde "Enviado".
+// Flujo permitido: Pendiente → Pagado → Enviado → Vendido (el pedido llegó al cliente).
+// Pagado → Vendido directo solo con "Recojo en Tienda" (se valida en entregas/entrega.js).
+// Cancelado antes del despacho. Los estados finales no cambian.
 const TRANSICIONES_ESTADO = {
-  Pendiente: ['Vendido', 'Denegado', 'Cancelado'],
-  Vendido: ['Pagado', 'Cancelado'],
-  Pagado: ['Enviado', 'Cancelado'],
-  Enviado: ['Entregado'],
-  Entregado: [],
-  Denegado: [],
+  Pendiente: ['Pagado', 'Cancelado'],
+  Pagado: ['Enviado', 'Vendido', 'Cancelado'],
+  Enviado: ['Vendido'],
+  Vendido: [],
   Cancelado: [],
 };
 
@@ -21,9 +19,9 @@ export const validarTransicion = (estadoActual, nuevoEstado) => {
   return `No se puede pasar de "${estadoActual}" a "${nuevoEstado}".`;
 };
 
-// REQ-F08-07: motivo obligatorio al denegar o cancelar
+// REQ-F08-07: motivo obligatorio al cancelar
 export const validarMotivo = (nuevoEstado, motivo) => {
-  if ((nuevoEstado === 'Denegado' || nuevoEstado === 'Cancelado') && !motivo.trim()) return "Debes ingresar un motivo.";
+  if (nuevoEstado === 'Cancelado' && !motivo.trim()) return "Debes ingresar un motivo.";
   return null;
 };
 
@@ -48,9 +46,9 @@ export const filtrarPedidos = (pedidos, filtroEstado, busqueda) => {
   });
 };
 
-// Motivo registrado por el admin al denegar o cancelar (último cambio hacia el estado actual)
+// Motivo registrado por el admin al cancelar (último cambio hacia el estado actual)
 export const motivoDelEstado = (pedido) => {
-  if (pedido.estado !== 'Denegado' && pedido.estado !== 'Cancelado') return null;
+  if (pedido.estado !== 'Cancelado') return null;
   const cambio = [...(pedido.historial || [])].reverse().find(h => h.estadoNuevo === pedido.estado);
   return cambio?.motivo || null;
 };
@@ -59,11 +57,10 @@ export const motivoDelEstado = (pedido) => {
 export const colorEstado = (estado) => {
   switch (estado) {
     case 'Pendiente': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'Vendido': return 'bg-teal-100 text-teal-800 border-teal-200';
     case 'Pagado': return 'bg-blue-100 text-blue-800 border-blue-200';
     case 'Enviado': return 'bg-purple-100 text-purple-800 border-purple-200';
-    case 'Entregado': return 'bg-green-100 text-green-800 border-green-200';
-    case 'Cancelado': case 'Denegado': return 'bg-red-100 text-red-800 border-red-200';
+    case 'Vendido': return 'bg-green-100 text-green-800 border-green-200';
+    case 'Cancelado': return 'bg-red-100 text-red-800 border-red-200';
     default: return 'bg-gray-100 text-gray-800 border-gray-200';
   }
 };

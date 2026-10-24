@@ -21,7 +21,7 @@ const TarjetaPedidoCliente = ({ pedido }) => {
             Estado: {esSolicitud ? 'En revisión' : pedido.estado}
           </span>
           <span className="text-xl font-titulo font-semibold text-cafe-tostado">
-            {esSolicitud ? 'Total referencial' : 'Total'}: {formatearSoles(pedido.total)}
+            Total: {formatearSoles(pedido.total)}
           </span>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { estadosDisponibles } from './estadoPedido';
 
-// Cambio de estado y motivo de denegación/cancelación (REQ-F08-04/07)
+// Cambio de estado y motivo de cancelación (REQ-F08-04/07)
 // Solo se ofrecen los estados a los que se puede pasar desde el estado actual
 const GestionEstado = ({ estadoActual, nuevoEstado, setNuevoEstado, motivoCancelacion, setMotivoCancelacion }) => (
   <>
@@ -11,7 +11,7 @@ const GestionEstado = ({ estadoActual, nuevoEstado, setNuevoEstado, motivoCancel
       </select>
     </div>
 
-    {(nuevoEstado === 'Denegado' || nuevoEstado === 'Cancelado') && (
+    {nuevoEstado === 'Cancelado' && (
       <div>
         <label className="block text-xs font-bold text-red-700 uppercase mb-2">Sustento Operativo (Obligatorio)</label>
         <input type="text" className="w-full border border-red-300 p-3 rounded-lg outline-none bg-red-50" value={motivoCancelacion} onChange={e => setMotivoCancelacion(e.target.value)} />

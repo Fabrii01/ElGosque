@@ -1,6 +1,7 @@
 // Datos del registro de envíos (REQ-F10-01/02/03)
 
-export const MODALIDADES_ENVIO = ['Agencia (Encomienda)', 'Delivery Local', 'Recojo en Tienda'];
+export const MODALIDAD_RECOJO = 'Recojo en Tienda';
+export const MODALIDADES_ENVIO = ['Agencia (Encomienda)', 'Delivery Local', MODALIDAD_RECOJO];
 
 // Hay datos de envío solo si el admin llenó al menos un campo
 export const tieneDatosEnvio = (datosEnvio) => Boolean(datosEnvio && (datosEnvio.modalidad || datosEnvio.agencia || datosEnvio.numeroGuia || datosEnvio.fechaEnvio));

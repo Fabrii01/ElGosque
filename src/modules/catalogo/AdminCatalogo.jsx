@@ -15,11 +15,12 @@ const AdminCatalogo = ({
         <div>
           <label className="block text-xs font-bold text-cafe-tostado uppercase mb-1">Variedad</label>
           <select className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm focus:ring-2 focus:ring-cafe-hoja outline-none" value={nuevoProducto.nombre} onChange={e => setNuevoProducto({...nuevoProducto, nombre: e.target.value})}>
-            {VARIEDADES_CAFE.map(variedad => <option key={variedad}>{variedad}</option>)}
+            {/* Un producto antiguo de una variedad retirada conserva su nombre al editarse */}
+            {(VARIEDADES_CAFE.includes(nuevoProducto.nombre) ? VARIEDADES_CAFE : [nuevoProducto.nombre, ...VARIEDADES_CAFE]).map(variedad => <option key={variedad}>{variedad}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-cafe-tostado uppercase mb-1">Precio Ref. (S/)</label>
+          <label className="block text-xs font-bold text-cafe-tostado uppercase mb-1">Precio (S/)</label>
           <input type="number" step="0.10" required className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm outline-none" value={nuevoProducto.precioReferencial} onChange={e => setNuevoProducto({...nuevoProducto, precioReferencial: e.target.value})}/>
         </div>
         <div>

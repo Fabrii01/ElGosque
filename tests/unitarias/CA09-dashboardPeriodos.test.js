@@ -15,7 +15,7 @@ describe('CA09 - Dashboard: indicadores, periodos y series (estadisticas.js)', (
     const kpis = calcularKpis([
       pedido('Vendido', 100, fecha(2026, 9)),
       pedido('Pagado', 200, fecha(2026, 9)),
-      pedido('Entregado', 300, fecha(2026, 9), { productos: [{ cantidad: 2 }] }),
+      pedido('Enviado', 300, fecha(2026, 9), { productos: [{ cantidad: 2 }] }),
       pedido('Pendiente', 50, fecha(2026, 9)),
     ]);
     expect(kpis).toMatchObject({ ingresos: 600, pedidosConcretados: 3, ticketPromedio: 200, solicitudes: 4, tasaConversion: 0.75 });
