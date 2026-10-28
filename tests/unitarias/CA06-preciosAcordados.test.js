@@ -22,8 +22,8 @@ describe('CA06 - Cantidad y precio final acordado (preciosAcordados.js)', () => 
     expect(calcularTotalAcordado([producto(2, 45), { nombre: 'Verde Premium', cantidad: 5, precioUnitario: 30 }])).toBe(240);
   });
 
-  it('4.0 [+] Datos válidos para confirmar la venta', () => {
-    expect(validarProductosAcordados('Vendido', [producto(2, 45)])).toBeNull();
+  it('4.0 [+] Datos válidos para registrar el pago', () => {
+    expect(validarProductosAcordados('Pagado', [producto(2, 45)])).toBeNull();
   });
 
   it('5.0 [–] Cantidad decimal', () => {
