@@ -1,15 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { consultarGroq, recortarHistorial } from './groqService';
 import { registrarSolicitud } from '../solicitud-pedido/solicitudService';
+import { construirMensajeWhatsApp, abrirWhatsApp } from '../solicitud-pedido/whatsapp';
 import { construirPromptSistema } from './promptAsistente';
-import { extraerSolicitud, construirSolicitudIA } from './solicitudIA';
+import { extraerSolicitud, construirSolicitudIA, limpiarFormato, confirmacionPedida, PREGUNTA_CONFIRMACION } from './solicitudIA';
 import GranoCafe from '../../shared/components/portal/GranoCafe';
 
-// 1. REEMPLAZA ESTO CON TU CLAVE REAL QUE EMPIEZA CON "AIzaSy..."
-const GEMINI_API_KEY = "";
-
-// 2. Inicializamos el SDK de Google
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+// Clave de Groq (console.groq.com > API Keys). Se pega solo en la copia local; en el repositorio queda vacía.
+const GROQ_API_KEY = "";
 
 // Solo se monta para clientes con sesión iniciada; usa su perfil y el catálogo activo (REQ-F12)
 const AsistenteIA = ({ userData, catalogo, trazabilidad }) => {
@@ -24,8 +22,8 @@ const AsistenteIA = ({ userData, catalogo, trazabilidad }) => {
   const [cargando, setCargando] = useState(false);
   const { region, procesos, cargando: cargandoTrazabilidad } = trazabilidad;
 
-  // Guardamos la instancia del chat en una referencia para mantener el contexto
-  const chatContextRef = useRef(null);
+  // Instrucciones de sistema y mensajes de la conversación (el contexto que se reenvía a la IA)
+  const historialRef = useRef(null);
   const chatFinRef = useRef(null);
 
   useEffect(() => {
@@ -36,25 +34,28 @@ const AsistenteIA = ({ userData, catalogo, trazabilidad }) => {
   // Las dependencias son estados estables: el chat no se reinicia al enviar mensajes.
   useEffect(() => {
     if (cargandoTrazabilidad) return;
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3.8-flash",
-      systemInstruction: construirPromptSistema({ userData, catalogo, trazabilidad: { region, procesos } }),
-      generationConfig: { temperature: 0.2 },
-    });
-    chatContextRef.current = model.startChat();
+    historialRef.current = {
+      sistema: construirPromptSistema({ userData, catalogo, trazabilidad: { region, procesos } }),
+      mensajes: [],
+    };
   }, [userData, catalogo, region, procesos, cargandoTrazabilidad]);
 
-  const agregarMensajeIA = (texto) => setMensajes(prev => [...prev, { remitente: 'ia', texto }]);
+  // pedido: solicitud registrada en ese mensaje (muestra el botón de WhatsApp)
+  const agregarMensajeIA = (texto, pedido = null) => setMensajes(prev => [...prev, { remitente: 'ia', texto, pedido }]);
 
-  // REQ-F12-03: registrar la solicitud que el cliente confirmó, con precios del catálogo
+  // REQ-F12-03: registrar la solicitud que el cliente confirmó, con precios del catálogo.
+  // Igual que el pedido manual, luego se continúa por WhatsApp con el resumen (REQ-F06).
   const registrarSolicitudConfirmada = async (jsonSolicitud) => {
     try {
       const solicitud = construirSolicitudIA(jsonSolicitud, { userData, catalogo });
       await registrarSolicitud(solicitud);
-      return `\n\n✅ Pedido registrado con código ${solicitud.codigo}. Total: S/ ${solicitud.total.toFixed(2)}. Puedes revisarlo en "Mis Pedidos".`;
+      return {
+        texto: `\n\n✅ Pedido registrado con código ${solicitud.codigo}. Total: S/ ${solicitud.total.toFixed(2)}. Para coordinar el pago y el envío, envía el resumen a nuestro WhatsApp. También puedes revisarlo en "Mis Pedidos".`,
+        pedido: solicitud,
+      };
     } catch (error) {
       console.error("Error al registrar la solicitud de la IA:", error);
-      return `\n\n⚠️ No se pudo registrar la solicitud: ${error.message || 'error inesperado'} Revisemos los datos e inténtalo de nuevo.`;
+      return { texto: `\n\n⚠️ No se pudo registrar la solicitud: ${error.message || 'error inesperado'} Revisemos los datos e inténtalo de nuevo.`, pedido: null };
     }
   };
 
@@ -66,19 +67,27 @@ const AsistenteIA = ({ userData, catalogo, trazabilidad }) => {
     setMensajes(prev => [...prev, { remitente: 'usuario', texto: mensajeUsuario }]);
     setInputTexto('');
 
-    if (!chatContextRef.current) {
+    if (!historialRef.current) {
       agregarMensajeIA('Estoy cargando la información de El Gosque, inténtalo en unos segundos.');
       return;
     }
 
     setCargando(true);
     try {
-      const result = await chatContextRef.current.sendMessage(mensajeUsuario);
-      const { texto, jsonSolicitud } = extraerSolicitud(result.response.text());
-      const confirmacion = jsonSolicitud ? await registrarSolicitudConfirmada(jsonSolicitud) : '';
-      agregarMensajeIA(texto + confirmacion);
+      const historial = historialRef.current;
+      const conversacion = [...recortarHistorial(historial.mensajes), { role: 'user', content: mensajeUsuario }];
+      const respuesta = await consultarGroq(GROQ_API_KEY, [{ role: 'system', content: historial.sistema }, ...conversacion]);
+      let { texto, jsonSolicitud } = extraerSolicitud(respuesta);
+      // Si la IA intenta registrar sin haber mostrado el resumen y pedido confirmación, primero se pregunta
+      if (jsonSolicitud && !confirmacionPedida(conversacion)) {
+        jsonSolicitud = null;
+        if (!texto.includes(PREGUNTA_CONFIRMACION)) texto = `${texto}\n\n${PREGUNTA_CONFIRMACION}`;
+      }
+      historial.mensajes = [...conversacion, { role: 'assistant', content: jsonSolicitud ? respuesta : texto }];
+      const registro = jsonSolicitud ? await registrarSolicitudConfirmada(jsonSolicitud) : { texto: '', pedido: null };
+      agregarMensajeIA((limpiarFormato(texto) + registro.texto).trim(), registro.pedido);
     } catch (error) {
-      console.error("Error de Gemini:", error);
+      console.error("Error del asistente de IA:", error);
       agregarMensajeIA('Ocurrió un error al contactar al servicio de IA. Intenta de nuevo.');
     } finally {
       setCargando(false);
@@ -115,6 +124,11 @@ const AsistenteIA = ({ userData, catalogo, trazabilidad }) => {
               <div key={idx} className={`flex ${m.remitente === 'usuario' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`p-3 rounded-md max-w-[80%] whitespace-pre-line leading-relaxed ${m.remitente === 'usuario' ? 'bg-cafe-hoja text-white rounded-br-none' : 'bg-cafe-leche text-cafe-espresso border border-cafe-espresso/15 shadow-sm rounded-bl-none'}`}>
                   {m.texto}
+                  {m.pedido && (
+                    <button type="button" onClick={() => abrirWhatsApp(construirMensajeWhatsApp(m.pedido))} className="mt-3 w-full bg-[#25D366] hover:bg-green-600 text-white font-bold py-2.5 rounded-sm shadow whitespace-normal">
+                      Continuar por WhatsApp
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

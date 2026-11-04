@@ -4,6 +4,22 @@ import { generarCodigoSolicitud } from '../solicitud-pedido/solicitudService';
 const PATRON_ETIQUETA = /<<<SOLICITUD:([\s\S]*?)>>>/;
 
 // Separa el texto visible de la etiqueta de solicitud que genera la IA
+export const PREGUNTA_CONFIRMACION = '¿Confirmas tu pedido?';
+
+// Respaldo del flujo de confirmación: solo se registra si el mensaje anterior de la IA mostró el resumen y pidió confirmación
+export const confirmacionPedida = (mensajes) => {
+  const ultimaRespuestaIA = [...mensajes].reverse().find(m => m.role === 'assistant');
+  return Boolean(ultimaRespuestaIA?.content.includes(PREGUNTA_CONFIRMACION));
+};
+
+// Respaldo por si el modelo responde con Markdown: el chat muestra texto plano (**negrita**, # títulos, `código`)
+export const limpiarFormato = (texto) => texto
+  .replace(/\*\*(.+?)\*\*/g, '$1')
+  .replace(/__(.+?)__/g, '$1')
+  .replace(/^#{1,6}\s+/gm, '')
+  .replace(/`([^`]+)`/g, '$1')
+  .replace(/^(\s*)\*\s+/gm, '$1- ');
+
 export const extraerSolicitud = (respuesta) => {
   const coincidencia = respuesta.match(PATRON_ETIQUETA);
   return {
