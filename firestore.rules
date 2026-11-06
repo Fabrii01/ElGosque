@@ -21,6 +21,15 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
     }
 
+    function textoValido(valor) {
+      return valor is string && valor.size() > 0 && valor.size() <= 120;
+    }
+
+    // Celular de Perú ya normalizado: misma regla que validacionRegistro.js
+    function telefonoValido(valor) {
+      return valor is string && valor.matches('^9[0-9]{8}$');
+    }
+
     // ---------- usuarios/{uid} (REQ-F02) ----------
     match /usuarios/{uid} {
       allow read: if esPropietario(uid) || esAdmin();
@@ -28,12 +37,22 @@ service cloud.firestore {
       // Registro: solo su propio documento, siempre como "cliente" y con consentimiento de datos (RN-15)
       allow create: if esPropietario(uid)
         && request.resource.data.keys().hasOnly(['nombre', 'negocio', 'ciudad', 'telefono', 'email', 'rol', 'aceptaPrivacidad', 'fechaRegistro'])
+        && textoValido(request.resource.data.nombre)
+        && textoValido(request.resource.data.negocio)
+        && textoValido(request.resource.data.ciudad)
+        && telefonoValido(request.resource.data.telefono)
+        && request.resource.data.email == request.auth.token.email
         && request.resource.data.rol == 'cliente'
         && request.resource.data.aceptaPrivacidad == true
         && request.resource.data.fechaRegistro == request.time;
 
-      // El cliente puede editar sus datos pero nunca su rol
-      allow update: if (esPropietario(uid) && request.resource.data.rol == resource.data.rol) || esAdmin();
+      // El cliente solo puede editar sus datos de contacto (nunca rol, correo ni consentimiento)
+      allow update: if esAdmin() || (esPropietario(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nombre', 'negocio', 'ciudad', 'telefono'])
+        && textoValido(request.resource.data.nombre)
+        && textoValido(request.resource.data.negocio)
+        && textoValido(request.resource.data.ciudad)
+        && telefonoValido(request.resource.data.telefono));
 
       allow delete: if false;
     }
@@ -67,14 +86,18 @@ service cloud.firestore {
       allow read: if esAdmin() || (estaAutenticado() && resource.data.clienteId == request.auth.uid);
 
       // RN-03: el cliente solo crea solicitudes propias en estado Pendiente,
-      // sin datos de pago, envío ni historial (eso lo registra el administrador)
+      // sin datos de pago, envío ni historial (eso lo registra el administrador).
+      // Exige correo verificado; el token debe renovarse tras verificar (comprobarCorreoVerificado).
       allow create: if estaAutenticado()
+        && request.auth.token.email_verified == true
         && request.resource.data.clienteId == request.auth.uid
         && request.resource.data.estado == 'Pendiente'
         && request.resource.data.fecha == request.time
         && request.resource.data.productos is list
         && request.resource.data.productos.size() > 0
+        && request.resource.data.productos.size() <= 50
         && request.resource.data.total is number
+        && request.resource.data.total >= 0
         && request.resource.data.keys().hasOnly([
              'codigo', 'clienteId', 'clienteNombre', 'clienteEmail', 'telefono', 'ciudad',
              'negocio', 'frecuencia', 'productos', 'total', 'estado', 'origen', 'fecha'

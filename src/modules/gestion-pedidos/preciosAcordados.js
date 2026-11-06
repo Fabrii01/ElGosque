@@ -17,6 +17,15 @@ export const recalcularProductos = (productos) => productos.map(p => {
 
 export const calcularTotalAcordado = (productos) => recalcularProductos(productos).reduce((sum, p) => sum + p.subtotal, 0);
 
+// El navegador del cliente envía los precios: el administrador debe ver si alguno no coincide con el catálogo
+export const productosConPrecioDistinto = (productos = [], catalogo = []) => {
+  if (catalogo.length === 0) return [];
+  return productos.filter(p => {
+    const enCatalogo = catalogo.find(c => c.nombre === p.nombre && c.peso === p.peso);
+    return !enCatalogo || Number(enCatalogo.precioReferencial) !== Number(p.precioUnitario);
+  });
+};
+
 export const validarProductosAcordados = (nuevoEstado, productos) => {
   if (productos.some(p => !Number.isInteger(Number(p.cantidad)) || Number(p.cantidad) < 1)) return "Las cantidades deben ser números enteros mayores que 0.";
   if (productos.some(p => Number(p.precioUnitario) < 0 || p.precioUnitario === '')) return "Los precios no pueden estar vacíos ni ser negativos.";

@@ -4,6 +4,7 @@ import { registrarSolicitud, generarCodigoSolicitud } from './solicitudService';
 import { construirMensajeWhatsApp, abrirWhatsApp } from './whatsapp';
 import { crearSolicitud, crearItemSolicitud } from './solicitud';
 import { leerCarritos, guardarCarritos, crearItemCarrito } from './carritoStorage';
+import { MENSAJE_TELEFONO, normalizarTelefono, telefonoValido } from '../registro-clientes/validacionRegistro';
 
 // Estado del carrito y del flujo de solicitud de pedido (REQ-F05, REQ-F06)
 export const useSolicitudPedido = (userData, { productos: catalogo, cargando: cargandoCatalogo }) => {
@@ -29,6 +30,7 @@ export const useSolicitudPedido = (userData, { productos: catalogo, cargando: ca
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [productoConfig, setProductoConfig] = useState(null);
   const [pedidoConfirmado, setPedidoConfirmado] = useState(null);
+  const [errorPedido, setErrorPedido] = useState('');
 
   // Los datos de contacto parten del perfil del cliente; lo que edite el usuario tiene prioridad
   const [datosEditados, setDatosEditados] = useState({});
@@ -65,11 +67,16 @@ export const useSolicitudPedido = (userData, { productos: catalogo, cargando: ca
   const procesarPedido = async (e) => {
     e.preventDefault();
     if (carrito.length === 0) return;
+    if (!telefonoValido(datosPedido.telefono)) {
+      setErrorPedido(MENSAJE_TELEFONO);
+      return;
+    }
+    setErrorPedido('');
 
     const nuevoPedido = crearSolicitud({
       codigo: generarCodigoSolicitud(),
       userData,
-      contacto: datosPedido,
+      contacto: { ...datosPedido, telefono: normalizarTelefono(datosPedido.telefono) },
       productos: carrito.map(item => crearItemSolicitud(item, item.cantidad, item.presentacionElegida, item.pesoElegido)),
     });
 
@@ -79,6 +86,7 @@ export const useSolicitudPedido = (userData, { productos: catalogo, cargando: ca
       setCarrito([]);
     } catch (error) {
       console.error("Error al registrar pedido: ", error);
+      setErrorPedido(error.code === 'correo-sin-verificar' ? error.message : 'No se pudo registrar el pedido. Revisa tu conexión e inténtalo de nuevo; tu carrito sigue guardado.');
     }
   };
 
@@ -89,11 +97,11 @@ export const useSolicitudPedido = (userData, { productos: catalogo, cargando: ca
     setPedidoConfirmado(null);
   };
 
-  const cerrarCarrito = () => { setIsCartOpen(false); setPedidoConfirmado(null); };
+  const cerrarCarrito = () => { setIsCartOpen(false); setPedidoConfirmado(null); setErrorPedido(''); };
 
   return {
     carrito, productosRetirados, isCartOpen, setIsCartOpen, cerrarCarrito,
-    productoConfig, setProductoConfig, pedidoConfirmado,
+    productoConfig, setProductoConfig, pedidoConfirmado, errorPedido,
     datosPedido, actualizarDatoPedido,
     abrirConfigurador, agregarAlCarrito, eliminarDelCarrito, calcularTotal, procesarPedido, enviarWhatsApp,
   };

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registrarCliente } from './registroService';
 import AvisoPrivacidad from './AvisoPrivacidad';
+import { LARGO_MINIMO_CONTRASENA, validarRegistro } from './validacionRegistro';
 
 const FormRegistroCliente = () => {
   // Estados para REQ-F02-01
@@ -18,6 +19,11 @@ const FormRegistroCliente = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const invalido = validarRegistro({ nombre, negocio, ciudad, telefono, password });
+    if (invalido) {
+      setError(invalido);
+      return;
+    }
     setError('');
     try {
       await registrarCliente({ nombre, negocio, ciudad, telefono, email, password });
@@ -25,8 +31,10 @@ const FormRegistroCliente = () => {
     } catch (error) {
       if (error.code === 'auth/email-already-in-use') {
         setError('Este correo ya está registrado. Inicia sesión.');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('El formato del correo no es válido.');
       } else {
-        setError('Error: Verifica tus credenciales o el formato del correo.');
+        setError('No se pudo crear la cuenta. Revisa tus datos e inténtalo de nuevo.');
       }
     }
   };
@@ -52,7 +60,7 @@ const FormRegistroCliente = () => {
         </div>
         <div>
           <label className="block text-xs font-bold text-cafe-tostado uppercase tracking-wide mb-1">Teléfono</label>
-          <input type="tel" className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm focus:ring-2 focus:ring-cafe-hoja outline-none transition" value={telefono} onChange={(e) => setTelefono(e.target.value)} required />
+          <input type="tel" inputMode="tel" autoComplete="tel" placeholder="Ej. 987 654 321" className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm focus:ring-2 focus:ring-cafe-hoja outline-none transition" value={telefono} onChange={(e) => setTelefono(e.target.value)} required />
         </div>
         <div>
           <label className="block text-xs font-bold text-cafe-tostado uppercase tracking-wide mb-1">Correo Electrónico</label>
@@ -60,7 +68,8 @@ const FormRegistroCliente = () => {
         </div>
         <div>
           <label className="block text-xs font-bold text-cafe-tostado uppercase tracking-wide mb-1">Contraseña</label>
-          <input type="password" minLength="6" className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm focus:ring-2 focus:ring-cafe-hoja outline-none transition" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <input type="password" minLength={LARGO_MINIMO_CONTRASENA} autoComplete="new-password" className="w-full bg-cafe-crema border border-cafe-espresso/15 p-3 rounded-sm focus:ring-2 focus:ring-cafe-hoja outline-none transition" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <p className="text-xs text-cafe-tostado/80 mt-1">Mínimo {LARGO_MINIMO_CONTRASENA} caracteres. Te enviaremos un correo para verificar tu cuenta.</p>
         </div>
 
         {/* RN-15: consentimiento para el tratamiento de datos */}

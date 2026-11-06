@@ -1,7 +1,14 @@
 // Exportación a CSV compatible con Excel (UTF-8 con BOM para tildes y ñ)
 
-const escaparCelda = (valor) => {
+// Excel ejecuta como fórmula el texto que empieza con = + - @ (o tabulador/retorno): un cliente podría
+// registrar "=HYPERLINK(...)" como negocio. Se antepone un apóstrofo solo a textos; los números no cambian.
+const neutralizarFormula = (valor) => {
   const texto = valor === null || valor === undefined ? '' : String(valor);
+  return typeof valor === 'string' && /^[=+\-@\t\r]/.test(texto) ? `'${texto}` : texto;
+};
+
+const escaparCelda = (valor) => {
+  const texto = neutralizarFormula(valor);
   return /[",\n\r]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
 };
 

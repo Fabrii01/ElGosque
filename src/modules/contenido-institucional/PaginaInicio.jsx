@@ -18,6 +18,7 @@ import CarritoPedido from '../solicitud-pedido/CarritoPedido';
 import BotonVerPedido from '../solicitud-pedido/BotonVerPedido';
 import AsistenteIA from '../asistente-ia/AsistenteIA';
 import AvisoAsistenteIA from '../asistente-ia/AvisoAsistenteIA';
+import AvisoVerificarCorreo from '../inicio-sesion/AvisoVerificarCorreo';
 import { useDesplazarAAncla } from '../../shared/hooks/useDesplazarAAncla';
 
 const PaginaInicio = () => {
@@ -43,6 +44,8 @@ const PaginaInicio = () => {
         cantidadCarrito={solicitud.carrito.length}
         onAbrirCarrito={() => solicitud.setIsCartOpen(true)}
       />
+
+      {esCliente && !userData.correoVerificado && <AvisoVerificarCorreo email={userData.email} />}
 
       <main>
         <HeroInstitucional infoWeb={infoWeb} cargandoInfo={cargandoInfo} region={trazabilidad.region} srcPortada={srcImagen('inicioPortada')} />

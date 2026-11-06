@@ -132,6 +132,7 @@ const PanelAdmin = () => {
       {pedidoSeleccionado && (
         <ModalGestionPedido
           key={pedidoSeleccionado.id}
+          catalogo={catalogo.productos}
           pedido={pedidoSeleccionado}
           adminUser={adminUser}
           onCerrar={() => setPedidoSeleccionado(null)}

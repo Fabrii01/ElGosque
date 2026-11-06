@@ -19,4 +19,6 @@ const app = initializeApp(firebaseConfig);
 // Exportar la base de datos y la autenticación
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+// Los correos de Firebase Auth (verificación) se envían en español
+auth.languageCode = 'es';
 export const storage = getStorage(app);

@@ -1,8 +1,17 @@
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { comprobarCorreoVerificado } from '../inicio-sesion/sesionService';
 
 // Las solicitudes se guardan en "pedidos" con estado Pendiente (REQ-F05)
-export const registrarSolicitud = (solicitud) => addDoc(collection(db, 'pedidos'), { ...solicitud, fecha: serverTimestamp() });
+// Punto único para el carrito y la IA: exige correo verificado (también lo exige firestore.rules)
+export const registrarSolicitud = async (solicitud) => {
+  if (!await comprobarCorreoVerificado()) {
+    const error = new Error('Primero verifica tu correo: abre el enlace que te enviamos o pide otro desde el aviso de la página.');
+    error.code = 'correo-sin-verificar';
+    throw error;
+  }
+  return addDoc(collection(db, 'pedidos'), { ...solicitud, fecha: serverTimestamp() });
+};
 
 // Sin caracteres ambiguos (0/O, 1/I) para que el cliente pueda dictar el código
 const CARACTERES_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

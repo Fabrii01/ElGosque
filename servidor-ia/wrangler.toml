@@ -1,0 +1,7 @@
+name = "el-gosque-ia"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Registros de Cloudflare: guardan los rechazos para revisarlos (Prueba 7, OWASP A09)
+[observability]
+enabled = true

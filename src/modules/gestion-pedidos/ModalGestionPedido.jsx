@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { actualizarPedido } from './pedidosService';
 import { validarTransicion, validarMotivo, crearEntradaHistorial } from './estadoPedido';
-import { ESTADOS_CON_PRECIO_EDITABLE, crearProductosEditables, recalcularProductos, calcularTotalAcordado, validarProductosAcordados } from './preciosAcordados';
+import { ESTADOS_CON_PRECIO_EDITABLE, crearProductosEditables, recalcularProductos, calcularTotalAcordado, validarProductosAcordados, productosConPrecioDistinto } from './preciosAcordados';
 import GestionEstado from './GestionEstado';
 import HistorialPedido from './HistorialPedido';
 import ProductosAcordados from './ProductosAcordados';
@@ -13,9 +13,10 @@ import { crearEnvioInicial, validarEnvio } from '../envios/envio';
 import { validarEntrega } from '../entregas/entrega';
 
 // Modal que reúne productos acordados, estado, pago, constancia, envío y entrega de un pedido; se guarda todo junto
-const ModalGestionPedido = ({ pedido, adminUser, onCerrar, onGuardado }) => {
+const ModalGestionPedido = ({ pedido, catalogo, adminUser, onCerrar, onGuardado }) => {
   const estadoActual = pedido.estado || 'Pendiente';
   const preciosEditables = ESTADOS_CON_PRECIO_EDITABLE.includes(estadoActual);
+  const preciosARevisar = preciosEditables ? productosConPrecioDistinto(pedido.productos, catalogo) : [];
   const [productos, setProductos] = useState(() => crearProductosEditables(pedido.productos));
   const [nuevoEstado, setNuevoEstado] = useState(estadoActual);
   const [motivoCancelacion, setMotivoCancelacion] = useState('');
@@ -72,6 +73,11 @@ const ModalGestionPedido = ({ pedido, adminUser, onCerrar, onGuardado }) => {
 
         <div className="p-4 sm:p-6 overflow-y-auto space-y-6">
           <form id="form-actualizar-pedido" onSubmit={guardarCambios} className="space-y-6">
+            {preciosARevisar.length > 0 && (
+              <p role="alert" className="bg-red-50 text-red-700 p-3 rounded-sm mb-3 text-sm font-medium border border-red-100">
+                Revisa el precio de {preciosARevisar.map(p => p.nombre).join(', ')}: no coincide con el catálogo actual. Puede ser un cambio de precio o una solicitud alterada.
+              </p>
+            )}
             <ProductosAcordados productos={productos} setProductos={setProductos} editable={preciosEditables} />
 
             <RegistroPago pago={pago} setPago={setPago}>

@@ -26,3 +26,7 @@ dist-ssr
 
 # Firebase Hosting (caché local del CLI)
 .firebase/
+
+# Cloudflare Worker (servidor-ia)
+.wrangler/
+.dev.vars

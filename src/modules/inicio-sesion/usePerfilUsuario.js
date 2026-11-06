@@ -9,7 +9,7 @@ export const usePerfilUsuario = () => {
     const unsubscribe = escucharSesion(async (currentUser) => {
       if (currentUser) {
         const perfil = await obtenerPerfilUsuario(currentUser.uid);
-        if (perfil) setUserData({ uid: currentUser.uid, ...perfil });
+        if (perfil) setUserData({ uid: currentUser.uid, ...perfil, correoVerificado: currentUser.emailVerified });
       } else {
         setUserData(null);
       }

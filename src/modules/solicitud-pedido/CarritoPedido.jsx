@@ -1,6 +1,6 @@
 // Panel lateral con el carrito, datos de contacto y confirmación de la solicitud
 const CarritoPedido = ({
-  carrito, productosRetirados, pedidoConfirmado, datosPedido, actualizarDatoPedido,
+  carrito, productosRetirados, pedidoConfirmado, errorPedido, datosPedido, actualizarDatoPedido,
   cerrarCarrito, eliminarDelCarrito, calcularTotal, procesarPedido, enviarWhatsApp,
 }) => (
   <div className="fixed inset-0 bg-cafe-espresso/60 backdrop-blur-sm z-[70] flex justify-end">
@@ -75,6 +75,7 @@ const CarritoPedido = ({
 
       {!pedidoConfirmado && carrito.length > 0 && (
         <div className="p-6 border-t bg-cafe-leche">
+          {errorPedido && <p role="alert" className="bg-red-50 text-red-600 p-3 rounded-sm mb-4 text-sm font-medium border border-red-100">{errorPedido}</p>}
           <div className="flex justify-between items-center mb-6">
             <span className="text-cafe-tostado/80 font-medium">Total Estimado</span>
             <span className="text-2xl font-titulo font-semibold text-cafe-hoja">S/ {calcularTotal().toFixed(2)}</span>

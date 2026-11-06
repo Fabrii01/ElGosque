@@ -6,16 +6,13 @@ import { construirPromptSistema } from './promptAsistente';
 import { extraerSolicitud, construirSolicitudIA, limpiarFormato, confirmacionPedida, PREGUNTA_CONFIRMACION } from './solicitudIA';
 import GranoCafe from '../../shared/components/portal/GranoCafe';
 
-// Clave de Groq (console.groq.com > API Keys). Se pega solo en la copia local; en el repositorio queda vacía.
-const GROQ_API_KEY = "";
-
 // Solo se monta para clientes con sesión iniciada; usa su perfil y el catálogo activo (REQ-F12)
 const AsistenteIA = ({ userData, catalogo, trazabilidad }) => {
   const [abierto, setAbierto] = useState(false);
   const [mensajes, setMensajes] = useState([
     {
       remitente: 'ia',
-      texto: `¡Hola, ${userData.nombre?.split(' ')[0] || 'cliente'}! Soy el asistente virtual de El Gosque. Puedo contarte sobre nuestras variedades de café, su trazabilidad y la cafetería, o ayudarte a registrar una solicitud de pedido.`
+      texto: `¡Hola, ${userData.nombre?.split(' ')[0] || 'cliente'}! Soy el asistente virtual de El Gosque. Puedo contarte sobre nuestras variedades de café, su trazabilidad y la cafetería, o ayudarte a registrar una solicitud de pedido. Por favor, no escribas datos personales en este chat.`
     }
   ]);
   const [inputTexto, setInputTexto] = useState('');
@@ -76,7 +73,7 @@ const AsistenteIA = ({ userData, catalogo, trazabilidad }) => {
     try {
       const historial = historialRef.current;
       const conversacion = [...recortarHistorial(historial.mensajes), { role: 'user', content: mensajeUsuario }];
-      const respuesta = await consultarGroq(GROQ_API_KEY, [{ role: 'system', content: historial.sistema }, ...conversacion]);
+      const respuesta = await consultarGroq([{ role: 'system', content: historial.sistema }, ...conversacion]);
       let { texto, jsonSolicitud } = extraerSolicitud(respuesta);
       // Si la IA intenta registrar sin haber mostrado el resumen y pedido confirmación, primero se pregunta
       if (jsonSolicitud && !confirmacionPedida(conversacion)) {
@@ -88,7 +85,9 @@ const AsistenteIA = ({ userData, catalogo, trazabilidad }) => {
       agregarMensajeIA((limpiarFormato(texto) + registro.texto).trim(), registro.pedido);
     } catch (error) {
       console.error("Error del asistente de IA:", error);
-      agregarMensajeIA('Ocurrió un error al contactar al servicio de IA. Intenta de nuevo.');
+      agregarMensajeIA(error.code === 'correo-sin-verificar'
+        ? 'Para usar el asistente primero verifica tu correo: abre el enlace que te enviamos o pide otro desde el aviso de la página.'
+        : 'Ocurrió un error al contactar al servicio de IA. Intenta de nuevo.');
     } finally {
       setCargando(false);
     }
