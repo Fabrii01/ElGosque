@@ -38,7 +38,7 @@ const PiePagina = () => (
       </Columna>
     </div>
     <div className="border-t border-cafe-crema/10">
-      <p className="container mx-auto px-4 md:px-8 py-6 text-xs text-cafe-crema/50">© {new Date().getFullYear()} El Gosque · Café orgánico especial</p>
+      <p className="container mx-auto px-4 md:px-8 pt-6 pb-24 text-xs text-cafe-crema/50">© {new Date().getFullYear()} El Gosque · Café orgánico especial</p>
     </div>
   </footer>
 );
